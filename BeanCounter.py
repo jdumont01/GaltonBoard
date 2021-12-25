@@ -33,7 +33,7 @@ def main():
     eventTotalAry = [0] * (depth + 1)
     #print ("rnd=", np.int8(100.0 * random.random()))
     
-    for k in range(100000):
+    for k in range(1000):
         for j in range(nSamples):
             nEventsLeft = 0
             nEventsRight = 0

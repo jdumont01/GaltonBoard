@@ -6,10 +6,10 @@ import sys
 
 # 1. Import `QApplication` and all the required widgets
 from PyQt5.QtWidgets import (QApplication,
-QLabel, 
-QHBoxLayout,
-QPushButton,
-QWidget)
+    QLabel, 
+    QHBoxLayout,
+    QPushButton,
+    QWidget)
 
 # 2. Create an instance of QApplication
 app = QApplication(sys.argv)
