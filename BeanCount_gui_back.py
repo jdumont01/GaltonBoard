@@ -42,6 +42,7 @@ class GaltonBoardUi(QMainWindow):
         self._blockHeightPx, self._blockWidthPx = self._calculateBlockSize()
         self._pegCoords = []
         self._eventTimer = eventTimer
+        self.label = {}
         
         #ball coords
         self._ballX = 0
@@ -145,7 +146,7 @@ class GaltonBoardUi(QMainWindow):
         print (self.pegCoords)
             
         self._setPegCoords()
-        #print (self._pegCoords)
+        print (self._pegCoords)
         
         # test
         #pegCoords = [[0,0], [0,1], [0,2], [0,3], [0,4],
@@ -156,27 +157,27 @@ class GaltonBoardUi(QMainWindow):
         
         # Create first and list rows' figures
         for key, coords in self.pegCoords.items():
-            #print (f'x = {x}, y= {y}')
-            label = QLabel(self)
+            #print (coords)
+            self.label[key] = QLabel(self)
             if coords[0] == 0:
-                if coords[y] != floor(self._boardHorBlocks/2):
-                    label.setPixmap(QPixmap("c:\\users\\jdumo\\documents\\horizontal-line.png"))
-                    label.setAlignment(Qt.AlignLeft)
-            elif coords[x] == self._boardVertBlocks - 1:
-                if coords[y] % 2 == 1:
-                    label.setPixmap(QPixmap("c:\\users\\jdumo\\documents\\vertical_line.png"))
-                    label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+                if coords[1] != floor(self._boardHorBlocks/2):
+                    self.label[key].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\horizontal-line.png"))
+                    self.label[key].setAlignment(Qt.AlignLeft)
+            elif coords[0] == self._boardVertBlocks - 1:
+                if coords[1] % 2 == 1:
+                    self.label[key].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\vertical_line.png"))
+                    self.label[key].setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
             else:
-                if coords[x,y] in self._pegCoords:
+                if coords in self._pegCoords:
                     #print (f'[{x}, {y}]')
-                    label.setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))
-                    label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+                    self.label[key].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))
+                    self.label[key].setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
                     
-            label.setFixedSize(self._blockWidthPx, self._blockHeightPx)
-            label.setScaledContents(True)
+            self.label[key].setFixedSize(self._blockWidthPx, self._blockHeightPx)
+            self.label[key].setScaledContents(True)
             #label.setSpacing(0)
-            label.setContentsMargins(0, 0, 0, 0)
-            pegLayout.addWidget(label, x, y)
+            self.label[key].setContentsMargins(0, 0, 0, 0)
+            pegLayout.addWidget(self.label[key], coords[0], coords[1])
                                 
         # Add to general layout
         self.generalLayout.addLayout(pegLayout)
@@ -189,7 +190,7 @@ class GaltonBoardUi(QMainWindow):
             if i%2 == 0:
                 for j in range(0, (floor(i/2))):
                     p = self._boardDepth - (floor(i/2)) + 1 + (2 * j)
-                    self._pegCoords.append([i, p])
+                    self._pegCoords.append((i, p))
                         
         return
         
