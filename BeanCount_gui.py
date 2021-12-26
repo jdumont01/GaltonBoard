@@ -26,6 +26,12 @@ __author__ = 'Joe Dumont'
 import random
 import sys
 
+class BallState():
+    init = 'INIT'              # ball is ready 
+    inProgress = 'INPROGRESS'  # ball is in play on board
+    inProcess = 'INPROCESS'    # process of being counted
+    complete = 'COMPLETE'      # ball has completed board
+    
 # creating game window
 class GaltonBoardUi(QMainWindow):
     """Galton Board Main Window"""
@@ -42,10 +48,14 @@ class GaltonBoardUi(QMainWindow):
         self._blockHeightPx, self._blockWidthPx = self._calculateBlockSize()
         self._pegCoords = []
         self._eventTimer = eventTimer
+        self.label = {}
+
+        self._ballState = BallState()
+        self._currBallState = self._ballState.init
         
         #ball coords
         self._ballX = 0
-        self._ballY = floor(self._boardDepth/2)
+        self._ballY = floor(self._boardHorBlocks/2)
         
         # creating a board object
         # self.board = Board(self)
@@ -94,15 +104,50 @@ class GaltonBoardUi(QMainWindow):
 
     # time event method
     def timerEvent(self, event):
-
+  
         # checking timer id
         if event.timerId() == self.timer.timerId():
-            self.statusBar.showMessage(str("Timer Event"))
+            self.statusBar.showMessage(f'Timer Event {event} | Current State of Ball {self._currBallState}')
+            
+            # Ball state types from BallState class
+            if self._getBallState() == self._ballState.init:
+                self.statusBar.showMessage(f'Timer Event | Current State of Ball is Ready')                
+                self.label[self._createKeyFromCoords(self._ballX, self._ballY)].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))  
+                self._setBallState(self._ballState.inProgress)
+                # starting timer
+                self.timer.start(Board.SPEED, self)
+            
+            if self._getBallState() == self._ballState.inProgress:
+                if self._getBallCoords() in self._pegCoords:
+                    self.statusBar.showMessage(f'Timer Event | Current State of Ball Coords: {self._getBallCoords()}')
+                    # move to next coord
+                else:
+                    self.statusBar.showMessage(f'Timer Event | Current State of Ball Coords: {self._ballX}, {self._ballY}')
+                    self.label[self._createKeyFromCoords(self._ballX, self._ballY)].clear()
+                    self._setBallCoords(self._ballX + 1, self._ballY)
+                    self.label[self._createKeyFromCoords(self._ballX, self._ballY)].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))  
+                    self.timer.start(Board.SPEED, self)
 
             # update the window
             self.update()
 
+    def _setBallState(self, state):
+        self._currBallState = state
+        
+    def _getBallState(self):
+        return self._currBallState
+        
+    def _setBallCoords(self, x, y):
+        self._ballX = x
+        self._ballY = y
+        
+        return
     
+    def _getBallCoords(self):
+        print (f'{self._ballX}, {self._ballY}')
+        return self._ballX, self._ballY
+        
+        
     def _calculateBoardGridSize(self):
         """Determine how many grid elements are needed based on
         Board depth."""
@@ -139,49 +184,45 @@ class GaltonBoardUi(QMainWindow):
         
         boardContentCoords = [(x,y) for x in range (self._boardVertBlocks) for y in range(self._boardHorBlocks)]
         for x, y in boardContentCoords:
-            key = f'x{x}y{y}'
-            self.pegCoords[key] = (x,y)
+            self.pegCoords[self._createKeyFromCoords(x,y)] = (x,y)
             
-        print (self.pegCoords)
+        #print (self.pegCoords)
             
         self._setPegCoords()
         #print (self._pegCoords)
-        
-        # test
-        #pegCoords = [[0,0], [0,1], [0,2], [0,3], [0,4],
-        #            [1,0], [1,1], [1,2], [1,3], [1,4],
-        #            [2,0], [2,1], [2,2], [2,3], [2,4],
-        #            [3,0], [3,1], [3,2], [3,3], [3,4]]
-        # Calculate grid size based on board depth
-        
+                
         # Create first and list rows' figures
-        for x, y in boardContentCoords:
-            #print (f'x = {x}, y= {y}')
-            label = QLabel(self)
-            if x == 0:
-                if y != floor(self._boardHorBlocks/2):
-                    label.setPixmap(QPixmap("c:\\users\\jdumo\\documents\\horizontal-line.png"))
-                    label.setAlignment(Qt.AlignLeft)
-            elif x == self._boardVertBlocks - 1:
-                if y % 2 == 1:
-                    label.setPixmap(QPixmap("c:\\users\\jdumo\\documents\\vertical_line.png"))
-                    label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        for key, coords in self.pegCoords.items():
+            #print (coords)
+            self.label[key] = QLabel(self)
+            if coords[0] == 0:
+                if coords[1] != floor(self._boardHorBlocks/2):
+                    self.label[key].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\horizontal-line.png"))
+                    self.label[key].setAlignment(Qt.AlignLeft)
+            elif coords[0] == self._boardVertBlocks - 1:
+                if coords[1] % 2 == 1:
+                    self.label[key].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\vertical_line.png"))
+                    self.label[key].setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
             else:
-                if [x,y] in self._pegCoords:
+                if coords in self._pegCoords:
                     #print (f'[{x}, {y}]')
-                    label.setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))
-                    label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+                    self.label[key].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))
+                    self.label[key].setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
                     
-            label.setFixedSize(self._blockWidthPx, self._blockHeightPx)
-            label.setScaledContents(True)
+            self.label[key].setFixedSize(self._blockWidthPx, self._blockHeightPx)
+            self.label[key].setScaledContents(True)
             #label.setSpacing(0)
-            label.setContentsMargins(0, 0, 0, 0)
-            pegLayout.addWidget(label, x, y)
+            self.label[key].setContentsMargins(0, 0, 0, 0)
+            pegLayout.addWidget(self.label[key], coords[0], coords[1])
                                 
         # Add to general layout
         self.generalLayout.addLayout(pegLayout)
         
         return
+        
+    def _createKeyFromCoords(self, x, y):
+        """Create the key value based on the provided coordinates."""     
+        return f'x{x}y{y}'
         
     def _setPegCoords(self):
         """ Calcualtes the coordinates for each peg."""
@@ -189,7 +230,7 @@ class GaltonBoardUi(QMainWindow):
             if i%2 == 0:
                 for j in range(0, (floor(i/2))):
                     p = self._boardDepth - (floor(i/2)) + 1 + (2 * j)
-                    self._pegCoords.append([i, p])
+                    self._pegCoords.append((i, p))
                         
         return
         
@@ -213,8 +254,7 @@ class GaltonBoardUi(QMainWindow):
             self.pegCoords[pegText].setFixedSize(20,20)
             pegLayout.addWidget(self.pegCoords[pegText], coord[0], coord[1])
         # Create vertial buckets
-        
-        
+                
         # Add to general layout
         self.generalLayout.addLayout(pegLayout)
         
