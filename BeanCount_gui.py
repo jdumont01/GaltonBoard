@@ -19,6 +19,10 @@ from PyQt5.QtCore import QBasicTimer
 from PyQt5.QtCore import Qt
 
 from math import *
+import      random
+
+_sysrand = random.SystemRandom()
+
 
 __version__ = '0.1'
 __author__ = 'Joe Dumont'
@@ -121,6 +125,17 @@ class GaltonBoardUi(QMainWindow):
                 if self._getBallCoords() in self._pegCoords:
                     self.statusBar.showMessage(f'Timer Event | Current State of Ball Coords: {self._getBallCoords()}')
                     # move to next coord
+                    rndN = _sysrand.randint(0, 9)
+                    #print (rndN)
+                    if rndN < 5:
+                        print("Left")
+                        self._setBallCoords(self._ballX - 1, self._ballY - 1)                        
+                    else:
+                        print("Right")
+                        self._setBallCoords(self._ballX + 1, self._ballY - 1)                        
+                    self.label[self._createKeyFromCoords(self._ballX, self._ballY)].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))  
+                    self.timer.start(Board.SPEED, self)
+
                 else:
                     self.statusBar.showMessage(f'Timer Event | Current State of Ball Coords: {self._ballX}, {self._ballY}')
                     self.label[self._createKeyFromCoords(self._ballX, self._ballY)].clear()
