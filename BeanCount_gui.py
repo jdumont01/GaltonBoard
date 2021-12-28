@@ -12,7 +12,11 @@ from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QStatusBar
 
 from PyQt5 import QtGui
-from PyQt5.QtGui import QPainter, QBrush, QPen, QPixmap
+from PyQt5.QtGui import QPainter
+from PyQt5.QtGui import QBrush
+from PyQt5.QtGui import QPen
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QFont
 
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QBasicTimer
@@ -20,6 +24,15 @@ from PyQt5.QtCore import Qt
 
 from math import *
 import      random
+import      matplotlib.pyplot as plt
+import      plotly as pl
+import      numpy as np
+from        mpl_toolkits.mplot3d import axes3d, Axes3D
+from        matplotlib.animation import FuncAnimation
+import      matplotlib.animation as animation
+from        matplotlib import cm
+from        matplotlib.ticker import LinearLocator, FormatStrFormatter
+import      matplotlib
 
 _sysrand = random.SystemRandom()
 
@@ -30,17 +43,83 @@ __author__ = 'Joe Dumont'
 import random
 import sys
 
+# Use by the Board to determine how to process each ball event
 class BallState():
     init = 'INIT'              # ball is ready 
     inProgress = 'INPROGRESS'  # ball is in play on board
     inProcess = 'INPROCESS'    # process of being counted
     complete = 'COMPLETE'      # ball has completed board
+    lastBall = 'DONE'          # last ball to be processed
     
+    
+class statisticsView():
+
+    def __init__(self, numEvents = 7, numSamples = 50):
+        self._nEvents = numEvents
+        self._nSamples = numSamples
+        self._nTotalLeft = 0
+        self._nTotalRight = 0
+        self._sampleAry = np.empty((0, self._nEvents), np.int8)
+        self._eventTotalAry = [0] * (self._nEvents + 1)
+        self._nEventsLeft = 0
+        self._nEventsRight = 0
+        #print("Sample #", j)
+        self._cntR = 0
+        self._evtAry = ['-'] * (self._nEvents + 1)
+        self._evtList = []
+
+    def eventResult(self):
+        """method can change the way the randmom number generator works."""
+        return _sysrand.randint(0, 9)
+
+    def updatePathList(self, result):
+        """result will be """
+        if result < 5:
+            evtResult = "L"
+            self._nEventsLeft += 1
+            self._nTotalLeft += 1
+        else:
+            #print("Right")
+            evtResult = "R"
+            self._nEventsRight += 1
+            self._nTotalRight += 1
+
+        self._evtList.append(evtResult)
+        #self._evtAry[i] = evtResult
+        #print(evtAry)
+        #print (evtList)
+
+        return
+
+    def resetEventList(self):
+        self._nEventsLeft = 0
+        self._nEventsRight = 0
+        self._evtList = []
+        
+    def getBucketID(self):
+        # Count the number of Right entries to determine which bucket receives the tally
+        print (self._cntR)
+        self._cntR = self._evtList.count("R")
+        
+        return self._cntR 
+
+    def incrementBucketValue(self, bucket, n):
+        self._eventTotalAry[bucket] = self._eventTotalAry[bucket] + 1
+        
+    def getBucketValue(self, bucket):
+        return self._eventTotalAry[bucket]
+        
+    def returnPathList(self):        
+        #print (self._evtList)
+        return str(self._evtList)
+        
+        
+        
 # creating game window
 class GaltonBoardUi(QMainWindow):
     """Galton Board Main Window"""
     
-    def __init__(self, board_depth = 7, eventTimer = 100, widthP = 800, heightP = 900):
+    def __init__(self, board_depth = 7, eventTimer = 50, nBalls= 5, widthP = 800, heightP = 900):
         """View UI Initializer"""
         
         super(GaltonBoardUi, self).__init__()
@@ -51,8 +130,12 @@ class GaltonBoardUi(QMainWindow):
         self._boardHorBlocks, self._boardVertBlocks = self._calculateBoardGridSize()
         self._blockHeightPx, self._blockWidthPx = self._calculateBlockSize()
         self._pegCoords = []
-        self._eventTimer = eventTimer
+        self._bucketCoords = []
+        self._eventTimerInterval = eventTimer
         self.label = {}
+        self.buckets = {}
+        self._nBalls = nBalls  
+        self._ballCtr = 0
 
         self._ballState = BallState()
         self._currBallState = self._ballState.init
@@ -60,6 +143,9 @@ class GaltonBoardUi(QMainWindow):
         #ball coords
         self._ballX = 0
         self._ballY = floor(self._boardHorBlocks/2)
+        
+        # Get a stats object
+        self._stats = statisticsView(self._boardDepth, self._nBalls)
         
         # creating a board object
         # self.board = Board(self)
@@ -69,13 +155,13 @@ class GaltonBoardUi(QMainWindow):
 
         # creating a status bar to show result
         #self.statusbar = self.statusBar()
-
+        
         # calling showMessage method when signal received by board
         #self.board.msg2statusbar[str].connect(self.statusbar.showMessage)
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
         self.statusBar.setStyleSheet("border : 2px solid black;")
-        self.statusBar.showMessage(str("Starting"))
+        self.statusBar.showMessage(f'Starting')
         
         # setting title to the window
         self.setWindowTitle('Galton Board')
@@ -103,8 +189,9 @@ class GaltonBoardUi(QMainWindow):
 
     def _start(self):
         """Start the board events."""
-        
-        self.timer.start(Board.SPEED, self)
+        # Initialize the bucket values
+        self._initBucketValues()
+        self.timer.start(self._eventTimerInterval, self)
 
     # time event method
     def timerEvent(self, event):
@@ -112,39 +199,95 @@ class GaltonBoardUi(QMainWindow):
         # checking timer id
         if event.timerId() == self.timer.timerId():
             self.statusBar.showMessage(f'Timer Event {event} | Current State of Ball {self._currBallState}')
-            
+            print (self._getBallState())
+            #print (self._stats.returnPathList())
+            #self.timer.stop()                    
+
             # Ball state types from BallState class
+            # INIT
             if self._getBallState() == self._ballState.init:
+                self._setCurrentBallCount(self._ballCtr + 1)
                 self.statusBar.showMessage(f'Timer Event | Current State of Ball is Ready')                
                 self.label[self._createKeyFromCoords(self._ballX, self._ballY)].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))  
+                self._stats.resetEventList()
                 self._setBallState(self._ballState.inProgress)
                 # starting timer
-                self.timer.start(Board.SPEED, self)
-            
-            if self._getBallState() == self._ballState.inProgress:
-                if self._getBallCoords() in self._pegCoords:
+                self.timer.start(self._eventTimerInterval, self)
+            # INPROGRESS
+            elif self._getBallState() == self._ballState.inProgress:
+                #Check on position
+                #print(f'check: {self._ballX} {self._boardVertBlocks - 1}')
+                # if the ball is done, reset and start next ball
+                if self._ballX == self._boardVertBlocks - 1:
+                    self.label[self._createKeyFromCoords(self._ballX, self._ballY)].clear()
+                    self._setBallState(self._ballState.inProcess)   
+                elif self._getBallCoords() in self._pegCoords:
                     self.statusBar.showMessage(f'Timer Event | Current State of Ball Coords: {self._getBallCoords()}')
                     # move to next coord
-                    rndN = _sysrand.randint(0, 9)
+                    rndN = self._stats.eventResult()
                     #print (rndN)
                     if rndN < 5:
-                        print("Left")
-                        self._setBallCoords(self._ballX - 1, self._ballY - 1)                        
+                        #print("Left")
+                        self._stats.updatePathList(rndN)
+                        self._setBallCoords((self._ballX - 1), (self._ballY - 1))
                     else:
-                        print("Right")
-                        self._setBallCoords(self._ballX + 1, self._ballY - 1)                        
+                        #print("Right")
+                        self._stats.updatePathList(rndN)
+                        self._setBallCoords((self._ballX - 1), (self._ballY + 1))
                     self.label[self._createKeyFromCoords(self._ballX, self._ballY)].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))  
-                    self.timer.start(Board.SPEED, self)
-
+                    self.statusBar.showMessage(f'Timer Event | Current Stats:  ')                
                 else:
                     self.statusBar.showMessage(f'Timer Event | Current State of Ball Coords: {self._ballX}, {self._ballY}')
                     self.label[self._createKeyFromCoords(self._ballX, self._ballY)].clear()
                     self._setBallCoords(self._ballX + 1, self._ballY)
                     self.label[self._createKeyFromCoords(self._ballX, self._ballY)].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))  
-                    self.timer.start(Board.SPEED, self)
 
+                self._messageBox.setText(f'Ball # {self._getCurrentBallCount()} updated path {self._stats.returnPathList()}')
+                self.timer.start(self._eventTimerInterval, self)                    
+
+            # INPROCESS
+            # process the stats for the ball that just finished
+            elif self._getBallState() == self._ballState.inProcess:
+                self.statusBar.showMessage(f'Timer Event | Current State of Ball : {self._currBallState}')
+                self._messageBox.setText(f'Ball # {self._getCurrentBallCount()} out of {self._nBalls}')
+                # finish if the last ball has been processed
+                if self._getCurrentBallCount() != self._nBalls:
+                    self._setBallState(self._ballState.init)   
+                    self._resetBallPosition()
+                else:
+                    self._setBallState(self._ballState.lastBall)
+                
+                # Determine which bucket is being updated
+                self._stats.incrementBucketValue(self._stats.getBucketID(), 1)
+                self.buckets[self._stats.getBucketID()].setText(f'{self._stats.getBucketValue(self._stats.getBucketID())}')
+                
+                self.timer.start(self._eventTimerInterval, self)
+
+            # LASTBALL
+            elif self._getBallState() == self._ballState.lastBall:
+                self.statusBar.showMessage(f'Timer Event | Current State of Ball : {self._currBallState}')
+                self._messageBox.setText(f'Last Ball.....Done')
+                self.timer.stop()
+            else:
+                self.statusBar.showMessage(f'Timer Event | Current State {self._currBallState} does not exist.')
             # update the window
             self.update()
+       
+    def _setCurrentBallCount(self, n):
+        self._ballCtr = n
+        
+    def _getCurrentBallCount(self):
+        return self._ballCtr
+        
+    def _setNumBalls(self, n):
+        self._nBalls = n 
+    
+    def _getNumBalls(self):
+        return self._nBalls
+
+    def _resetBallPosition(self):
+        self._ballX = 0
+        self._ballY = floor(self._boardHorBlocks/2)
 
     def _setBallState(self, state):
         self._currBallState = state
@@ -159,10 +302,9 @@ class GaltonBoardUi(QMainWindow):
         return
     
     def _getBallCoords(self):
-        print (f'{self._ballX}, {self._ballY}')
+        #print (f'{self._ballX}, {self._ballY}')
         return self._ballX, self._ballY
-        
-        
+               
     def _calculateBoardGridSize(self):
         """Determine how many grid elements are needed based on
         Board depth."""
@@ -180,15 +322,16 @@ class GaltonBoardUi(QMainWindow):
         
     def _createUserMessageDisplay(self):
         """This display updates the user with the current status of the events."""
-        self.display = QLineEdit()
+        self._messageBox = QLineEdit()
             
         # Basic layout params
-        self.display.setFixedHeight(50)
-        self.display.setAlignment(Qt.AlignLeft)
-        self.display.setReadOnly(True)
+        self._messageBox.setFixedHeight(50)
+        self._messageBox.setAlignment(Qt.AlignLeft)
+        self._messageBox.setReadOnly(True)
+        self._messageBox.setFont(QFont("Arial",20))
 
         # Add to the general layout
-        self.generalLayout.addWidget(self.display)
+        self.generalLayout.addWidget(self._messageBox)
         
         return
 
@@ -277,20 +420,36 @@ class GaltonBoardUi(QMainWindow):
         
     def _createResultsDisplay(self):
         """This display updates the user with the current status of the events."""
-        resDisplayLayout = QGridLayout()
+        self._bucketLayout = QGridLayout()
+        self._bucketCoords = {}
         
-        for y in range(0,self._boardHorBlocks, 2):
-            display = QLineEdit()            
+        bucketContentCoords = [ (self._boardHorBlocks, y) for y in range(0, self._boardHorBlocks, 2)]
+        for x,y in bucketContentCoords:
+            # calculate the bucket id as the key - 0, 1, 2 etc
+            self._bucketCoords[floor(y/2)] = (x,y)
+            
+        for key, coords in self._bucketCoords.items():
+            #print (f'key = {key}')
+            self.buckets[key] = QLineEdit(self)            
             # Basic layout params   
-            display.setFixedHeight(50)
-            display.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-            display.setReadOnly(True)
-            resDisplayLayout.addWidget(display, 0, y)
+            self.buckets[key].setFixedHeight(50)
+            self.buckets[key].setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            self.buckets[key].setReadOnly(True)
+            self.buckets[key].setFont(QFont("Arial",12))
+            self._bucketLayout.addWidget(self.buckets[key], coords[0], coords[1])
 
         # Add to the general layout
-        self.generalLayout.addLayout(resDisplayLayout)
+        self.generalLayout.addLayout(self._bucketLayout)
 
         return
+        
+    def _initBucketValues(self):
+        """This function initializes the values of each bucket."""
+        for key, _ in self._bucketCoords.items():
+            print (f'{key}')
+            self.buckets[key].setText(f"0")
+            
+            
         
     # Public Interfaces
     def setDisplayText(self, text):
@@ -362,7 +521,7 @@ class Board(QFrame):
 # Client side code
 def main():
     app = QApplication(sys.argv)
-    view = GaltonBoardUi(board_depth=4)
+    view = GaltonBoardUi(board_depth=3)
     view.show()
     sys.exit(app.exec_())
 
