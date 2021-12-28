@@ -10,6 +10,10 @@ from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QStatusBar
+from PyQt5.QtWidgets import QMenuBar
+from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QToolBar
+from PyQt5.QtWidgets import QAction
 
 from PyQt5 import QtGui
 from PyQt5.QtGui import QPainter
@@ -124,6 +128,10 @@ class GaltonBoardUi(QMainWindow):
         
         super(GaltonBoardUi, self).__init__()
 
+        self._createMenuActions()
+        self._createMenuBar()
+        self._connectActions()
+        
         self._boardDepth = board_depth
         self._boardWidthPx = widthP
         self._boardHeightPx = heightP
@@ -186,6 +194,47 @@ class GaltonBoardUi(QMainWindow):
 
         # showing the main window
         self.show()
+        
+    def _createMenuBar(self):
+        """Create Menu Bar"""
+        menuBar = QMenuBar(self)
+        self.setMenuBar(menuBar)
+
+        # Creating menus using a title
+        boardMenu = menuBar.addMenu("&Board")
+        boardMenu.addAction(self.startAction)
+        boardMenu.addAction(self.stopAction)
+        boardMenu.addSeparator()
+        boardMenu.addAction(self.exitAction)
+
+        helpMenu = menuBar.addMenu("&Help")        
+
+    def _createMenuActions(self):
+        # Creating actions using the second constructor
+        self.startAction = QAction("&Start", self)
+        self.stopAction = QAction("S&top", self)
+        self.exitAction = QAction("&Exit", self)
+        self.helpContentAction = QAction("&Help Content", self)
+        self.aboutAction = QAction("&About", self)
+        
+    def _connectMenuActions(self):
+        self.startAction.triggered.connect(self.startBoard)
+
+    def startBoard(self):
+        print (f'In startBoard')
+    
+    def stopBoard(self):
+        print (f'In stopBoard')
+        
+    def exitBoard(self):
+        print (f'In exitBoard')
+        
+    def helpContent(self):
+        print (f'In helpContent')
+        
+    def aboutContent(self):
+        print (f'In aboutAction')
+    
 
     def _start(self):
         """Start the board events."""
@@ -392,50 +441,31 @@ class GaltonBoardUi(QMainWindow):
                         
         return
         
-    def _createPegBoard2(self):
-        """Creates the Galton Board"""
-        pegLayout = QGridLayout()
-        self.pegCoords = {}
-        
-        # test
-        pegCoords = {
-                        '01': (0,0), '11': (0,1), '21': (0,2), '31': (0,3), '41': (0,4),
-                        '02': (1,0), '12': (1,1), u"\u2B24": (1,2), '32': (1,3), '42': (1,4),
-                        '03': (2,0), '23': (2,1), '23': (2,2), '33': (2,3), '43': (2,4),
-                        '04': (3,0), u"\u2B24": (3,1), '24': (3,2), u"\u2B24": (3,3), '44': (3,4)
-                    }
-        # Calculate grid size based on board depth
-        
-        # Position pegs using large circle unicode
-        for pegText, coord in pegCoords.items():
-            self.pegCoords[pegText] = QLabel(pegText)
-            self.pegCoords[pegText].setFixedSize(20,20)
-            pegLayout.addWidget(self.pegCoords[pegText], coord[0], coord[1])
-        # Create vertial buckets
-                
-        # Add to general layout
-        self.generalLayout.addLayout(pegLayout)
-        
-        return
-        
     def _createResultsDisplay(self):
         """This display updates the user with the current status of the events."""
         self._bucketLayout = QGridLayout()
         self._bucketCoords = {}
         
-        bucketContentCoords = [ (self._boardHorBlocks, y) for y in range(0, self._boardHorBlocks, 2)]
+        self._bucketLayout.setSpacing(self._blockWidthPx)
+        
+        bucketContentCoords = [ (self._boardHorBlocks, y) for y in range(self._boardHorBlocks)]
         for x,y in bucketContentCoords:
-            # calculate the bucket id as the key - 0, 1, 2 etc
-            self._bucketCoords[floor(y/2)] = (x,y)
-            
+            # calculate and the bucket id as the key - 0, 1, 2 etc
+            # to align with the logic for counting R's
+            if y%2 == 0:
+                self._bucketCoords[floor(y/2)] = (x,y)
+          
+        # Need to display blank blocks along side the Edit boxes
         for key, coords in self._bucketCoords.items():
-            #print (f'key = {key}')
+            print (f'key = {key}')
             self.buckets[key] = QLineEdit(self)            
             # Basic layout params   
             self.buckets[key].setFixedHeight(50)
             self.buckets[key].setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
             self.buckets[key].setReadOnly(True)
             self.buckets[key].setFont(QFont("Arial",12))
+            self.buckets[key].setContentsMargins(0, 0, 0, 0)
+            self.buckets[key].setFixedSize(self._blockWidthPx, self._blockHeightPx)
             self._bucketLayout.addWidget(self.buckets[key], coords[0], coords[1])
 
         # Add to the general layout
@@ -450,8 +480,9 @@ class GaltonBoardUi(QMainWindow):
             self.buckets[key].setText(f"0")
             
             
-        
+    # *****************    
     # Public Interfaces
+    # *****************        
     def setDisplayText(self, text):
         """Set display's text."""
         self.display.setText(text)
@@ -521,7 +552,7 @@ class Board(QFrame):
 # Client side code
 def main():
     app = QApplication(sys.argv)
-    view = GaltonBoardUi(board_depth=3)
+    view = GaltonBoardUi(board_depth=3, nBalls = 30)
     view.show()
     sys.exit(app.exec_())
 
