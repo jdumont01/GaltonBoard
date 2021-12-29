@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QStatusBar
 from PyQt5.QtWidgets import QMenuBar
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QToolBar
-from PyQt5.QtWidgets import QAction
+from PyQt5.QtWidgets import QAction, QInputDialog
 
 from PyQt5 import QtGui
 from PyQt5.QtGui import QPainter
@@ -21,10 +21,13 @@ from PyQt5.QtGui import QBrush
 from PyQt5.QtGui import QPen
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QIntValidator,QDoubleValidator
 
+from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QBasicTimer
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QEvent
 
 from math import *
 import      random
@@ -55,6 +58,12 @@ class BallState():
     complete = 'COMPLETE'      # ball has completed board
     lastBall = 'DONE'          # last ball to be processed
     
+class BoardState():
+    init = 'INIT'               # board is being initialized 
+    inProgress = 'INPROGRESS'   # board is being drawn
+    paused = 'PAUSED'           # board is paused    
+    stopped = 'STOPPED'         # board activity has been stopped
+    ready = 'READY'             # board is ready to be used
     
 class statisticsView():
 
@@ -107,6 +116,9 @@ class statisticsView():
         
         return self._cntR 
 
+    def clearBucketValues(self):
+        self._eventTotalAry = [0] * (self._nEvents + 1)        
+        
     def incrementBucketValue(self, bucket, n):
         self._eventTotalAry[bucket] = self._eventTotalAry[bucket] + 1
         
@@ -116,29 +128,30 @@ class statisticsView():
     def returnPathList(self):        
         #print (self._evtList)
         return str(self._evtList)
-        
-        
-        
+                      
 # creating game window
 class GaltonBoardUi(QMainWindow):
     """Galton Board Main Window"""
     
-    def __init__(self, board_depth = 7, eventTimer = 50, nBalls= 5, widthP = 800, heightP = 900):
+    def __init__(self, board_depth = 7, eventTimer = 5, nBalls= 5, widthP = 800, heightP = 900):
         """View UI Initializer"""
         
         super(GaltonBoardUi, self).__init__()
-
+        self._boardState = BoardState()
+        self._currBoardState = self._boardState.init
+        
+        # Create the Menu
         self._createMenuActions()
         self._createMenuBar()
-        self._connectActions()
-        
+        self._connectMenuActions()
+                
         self._boardDepth = board_depth
         self._boardWidthPx = widthP
         self._boardHeightPx = heightP
-        self._boardHorBlocks, self._boardVertBlocks = self._calculateBoardGridSize()
-        self._blockHeightPx, self._blockWidthPx = self._calculateBlockSize()
         self._pegCoords = []
+        self.pegCoords = {}
         self._bucketCoords = []
+        self._bucketContentCoords = []
         self._eventTimerInterval = eventTimer
         self.label = {}
         self.buckets = {}
@@ -149,8 +162,12 @@ class GaltonBoardUi(QMainWindow):
         self._currBallState = self._ballState.init
         
         #ball coords
+        self._boardHorBlocks = 0
+        self._boardVertBlocks = 0
+        self._blockHeightPx = 0 
+        self._blockWidthPx = 0
         self._ballX = 0
-        self._ballY = floor(self._boardHorBlocks/2)
+        self._ballY = 0  #floor(self._boardHorBlocks/2)
         
         # Get a stats object
         self._stats = statisticsView(self._boardDepth, self._nBalls)
@@ -184,10 +201,11 @@ class GaltonBoardUi(QMainWindow):
         self._centralWidget = QWidget(self)
         self.setCentralWidget(self._centralWidget)
         self._centralWidget.setLayout(self.generalLayout)
-        self._createUserMessageDisplay()
-        self._createPegBoard()
-        self._createResultsDisplay()
-        self._start()
+        #self._createBoardHeader()
+        #self._createUserMessageDisplay()
+        #self._createPegBoard()
+        #self._createResultsDisplay()
+        self._initialize()
 
         # starting the board object
         #self.board.start()
@@ -204,8 +222,14 @@ class GaltonBoardUi(QMainWindow):
         boardMenu = menuBar.addMenu("&Board")
         boardMenu.addAction(self.startAction)
         boardMenu.addAction(self.stopAction)
+        boardMenu.addAction(self.resetAction)
+        boardMenu.addSeparator()        
+        boardMenu.addAction(self.pauseAction)
+        boardMenu.addAction(self.resumeAction)
         boardMenu.addSeparator()
         boardMenu.addAction(self.exitAction)
+
+        statisticsMenu = menuBar.addMenu("&Statistics")        
 
         helpMenu = menuBar.addMenu("&Help")        
 
@@ -213,21 +237,99 @@ class GaltonBoardUi(QMainWindow):
         # Creating actions using the second constructor
         self.startAction = QAction("&Start", self)
         self.stopAction = QAction("S&top", self)
+        self.resetAction = QAction("&Reset", self)
+        self.pauseAction = QAction("&Pause", self)
+        self.resumeAction = QAction("R&esume", self)
         self.exitAction = QAction("&Exit", self)
         self.helpContentAction = QAction("&Help Content", self)
         self.aboutAction = QAction("&About", self)
         
     def _connectMenuActions(self):
         self.startAction.triggered.connect(self.startBoard)
+        self.stopAction.triggered.connect(self.stopBoard)
+        self.resetAction.triggered.connect(self.resetBoard)
+        self.pauseAction.triggered.connect(self.pauseBoard)
+        self.resumeAction.triggered.connect(self.resumeBoard)
+        self.exitAction.triggered.connect(self.exitBoard)
 
     def startBoard(self):
-        print (f'In startBoard')
-    
+        #print (f'In startBoard; board state = {self._currBoardState}')
+
+        self._houseCleaning()
+                
+        # Board Depth
+        num, ok = QInputDialog.getInt(self, "Board Depth Dialog", "Enter the Board Depth")
+
+        if ok:
+            self._setBoardDepth(num)
+            #self._inputBoardDepthBox.setText(f'Depth = {self._getBoardDepth()}')
+        else:
+            self.statusBar.showMessage(f'Invalid Board Depth Input')
+
+        # Number of Balls
+        num, ok = QInputDialog.getInt(self, "Number of Tests Dialog", "Enter the Number of Balls")
+
+        if ok:
+            self._setNumBalls(num)
+            #self._inputNumBallsBox.se.reatText(f'Depth = {self._getNumBalls()}')
+        else:
+            self.statusBar.showMessage(f'Invalid Ball Number Input')
+        
+        #print(f'Current Board state is {self._currBoardState}')
+        
+        if (self._currBoardState == self._boardState.stopped or
+            self._currBoardState == self._boardState.paused or 
+            self._currBoardState == self._boardState.ready):
+            self._currBoardState = self._boardState.stopped
+        else:
+            self._currBoardState = self._boardState.init
+        
+        self._start()
+        
+    def _houseCleaning(self):
+        # Housecleaning
+        if (self._currBoardState == self._boardState.inProgress or
+            self._currBoardState == self._boardState.stopped or
+            self._currBoardState == self._boardState.ready):
+            #Clear widgets from each layouts
+            self._clearResultsDisplay()
+            self._clearPegBoard()
+            self._clearLayout(self.generalLayout)
+            del self._stats 
+        else:
+            print(f'Do nothing for now')
+            
+        return
+   
     def stopBoard(self):
         print (f'In stopBoard')
+        self._messageBox.setText(f'Stopping.....Will implement saving results later.')
+        self._currBoardState = self._boardState.stopped
+        self.timer.stop()
         
+    def resetBoard(self):
+        #print (f'In resetBoard; board state = {self._currBoardState}')
+        if (self._currBoardState == self._boardState.stopped or
+            self._currBoardState == self._boardState.ready):
+            self._messageBox.setText(f'Resetting Board Statistics.')
+            self.timer.stop()
+            self._houseCleaning()
+            self._start()
+        
+    def pauseBoard(self):
+        print (f'In pauseBoard')
+        self._currBoardState = self._boardState.paused
+        self.timer.stop()
+
+    def resumeBoard(self):
+        print (f'In pauseBoard')
+        if (self._currBoardState == self._boardState.stopped or 
+            self._currBoardState == self._boardState.paused):
+            self.timer.start(self._eventTimerInterval, self)
+
     def exitBoard(self):
         print (f'In exitBoard')
+        self.close()
         
     def helpContent(self):
         print (f'In helpContent')
@@ -235,12 +337,60 @@ class GaltonBoardUi(QMainWindow):
     def aboutContent(self):
         print (f'In aboutAction')
     
+    def _initialize(self):
+        self.statusBar.showMessage(f'Select Board --> Start to start the Galton Board.')
+        self._ballCtr = 0
+        self._currBallState = self._ballState.init
+        
+        #ball coords
+        self._ballX = 0
+        self._ballY = floor(self._boardHorBlocks/2)
 
+    def _restart(self):
+        print (f'board state = {self._currBoardState}')
+        
+        if self._currBoardState == self._boardState.ready:
+            #Clear widgets from each layouts
+            self._houseCleaning()
+            self._createBoardHeader()        
+            self._createPegBoard()
+            self._createResultsDisplay()
+            self._stats = statisticsView(self._boardDepth, self._nBalls)
+
+        return
+        
     def _start(self):
-        """Start the board events."""
+        """Start the board events."""        
+        print (f'In _start; board state = {self._currBoardState}')
+        self._boardHorBlocks, self._boardVertBlocks = self._calculateBoardGridSize()
+        self._blockHeightPx, self._blockWidthPx = self._calculateBlockSize()
+
+        if self._currBoardState == self._boardState.init:
+            self._stats = statisticsView(self._boardDepth, self._nBalls)
+            self._createBoardHeader()        
+            self._createPegBoard()
+            self._createResultsDisplay()
+        elif (self._currBoardState == self._boardState.inProgress or
+            self._currBoardState == self._boardState.stopped or
+            self._currBoardState == self._boardState.ready):
+            #Clear widgets from each layouts
+            #self._clearPegBoard()
+            #self._clearLayout(self.generalLayout)
+            self._stats = statisticsView(self._boardDepth, self._nBalls)
+            self._createBoardHeader()        
+            self._createPegBoard()
+            self._createResultsDisplay()
+        else:
+            print(f'Do nothing for now')
+
         # Initialize the bucket values
         self._initBucketValues()
+        self._initialize()
+
+        self._currBoardState = self._boardState.ready
         self.timer.start(self._eventTimerInterval, self)
+        
+        return
 
     # time event method
     def timerEvent(self, event):
@@ -248,7 +398,7 @@ class GaltonBoardUi(QMainWindow):
         # checking timer id
         if event.timerId() == self.timer.timerId():
             self.statusBar.showMessage(f'Timer Event {event} | Current State of Ball {self._currBallState}')
-            print (self._getBallState())
+            #print (self._getBallState())
             #print (self._stats.returnPathList())
             #self.timer.stop()                    
 
@@ -316,17 +466,50 @@ class GaltonBoardUi(QMainWindow):
             elif self._getBallState() == self._ballState.lastBall:
                 self.statusBar.showMessage(f'Timer Event | Current State of Ball : {self._currBallState}')
                 self._messageBox.setText(f'Last Ball.....Done')
+                self._currBoardState == self._boardState.stopped
                 self.timer.stop()
             else:
                 self.statusBar.showMessage(f'Timer Event | Current State {self._currBallState} does not exist.')
             # update the window
             self.update()
-       
+
+    def _clearLayout(self, layout):
+        """Remove widgets from layout."""
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    layout.removeWidget(widget)
+                    #widget.setParent(None)
+                else:
+                    self._clearLayout(item.layout())        
+
+    def _clearWidgetsFromLayout(self, layout):
+    
+        for j in reversed(range(layout.count())): 
+            print (f'{j}')
+            widgetToRemove = layout_item.itemAt(j).widget()
+            
+            if widgetToRemove is not None:
+                # remove it from the layout list
+                layout_item.removeWidget(widgetToRemove)
+                # remove it from the gui
+                widgetToRemove.setParent(None)
+                    
+        return
+        
     def _setCurrentBallCount(self, n):
         self._ballCtr = n
         
     def _getCurrentBallCount(self):
         return self._ballCtr
+        
+    def _setBoardDepth(self, n):
+        self._boardDepth = n
+
+    def _getBoardDepth(self):
+        return self._boardDepth
         
     def _setNumBalls(self, n):
         self._nBalls = n 
@@ -374,26 +557,89 @@ class GaltonBoardUi(QMainWindow):
         self._messageBox = QLineEdit()
             
         # Basic layout params
-        self._messageBox.setFixedHeight(50)
+        self._messageBox.setFixedHeight(25)
         self._messageBox.setAlignment(Qt.AlignLeft)
         self._messageBox.setReadOnly(True)
-        self._messageBox.setFont(QFont("Arial",20))
+        self._messageBox.setFont(QFont("Arial",15))
 
         # Add to the general layout
-        self.generalLayout.addWidget(self._messageBox)
-        
+        #self.generalLayout.addWidget(self._messageBox)
+        self._boardHeaderLayout.addWidget(self._messageBox, 0, 0)
+
         return
 
+    def _createBoardHeader(self):
+        self._boardHeaderLayout = QGridLayout()
+        self._boardHeaderCoords = {}
+        #self._boardHeaderLayout.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+
+        # Create Output Message box for the user
+        self._messageBox = QLineEdit()
+            
+        # Basic layout params
+        self._messageBox.setFixedHeight(25)
+        self._messageBox.setAlignment(Qt.AlignLeft)
+        self._messageBox.setFixedWidth(self._boardWidthPx)
+        self._messageBox.setReadOnly(True)
+        self._messageBox.setFont(QFont("Arial",15))
+
+        # Add to the general layout
+        self._boardHeaderLayout.addWidget(self._messageBox, 0, 0)
+
+        # Create Input box to enter board depth
+        self._inputBoardDepthBox = QLineEdit()
+            
+        # Basic layout params
+        self._inputBoardDepthBox.setFixedHeight(25)
+        self._inputBoardDepthBox.setValidator(QIntValidator())
+        self._inputBoardDepthBox.setAlignment(Qt.AlignHCenter)
+        self._inputBoardDepthBox.setFixedWidth((floor(self._boardHorBlocks/2) - 1) * self._blockWidthPx)
+        self._inputBoardDepthBox.setFont(QFont("Arial",15))
+        self._inputBoardDepthBox.setText(f'Depth = {self._boardDepth}')
+        # Add to the general layout
+        self._boardHeaderLayout.addWidget(self._inputBoardDepthBox, 1, 0)
+        
+        # Create Input box to enter the number of balls
+        self._inputNumBallsBox = QLineEdit()
+            
+        # Basic layout params
+        self._inputNumBallsBox.setFixedHeight(25)
+        self._inputNumBallsBox.setValidator(QIntValidator())
+        self._inputNumBallsBox.setAlignment(Qt.AlignHCenter)
+        self._inputNumBallsBox.setFixedWidth((floor(self._boardHorBlocks/2) - 1) * self._blockWidthPx)
+        self._inputNumBallsBox.setReadOnly(False)
+        self._inputNumBallsBox.setFont(QFont("Arial",15))
+        self._inputNumBallsBox.setText(f'Number of Balls = {self._nBalls}')
+        # Add to the general layout
+        self._boardHeaderLayout.addWidget(self._inputNumBallsBox, 1, 1)
+
+        self.generalLayout.addLayout(self._boardHeaderLayout)
+                
+    def _clearPegBoard(self):
+        print(f'In _clearPegBoard')
+        if self._pegLayout is not None:
+            for key, _ in self.pegCoords.items():   
+                #print (f'key = {key}')
+                self.label[key].clear()
+                if self.label[key] is not None:
+                    #print (f'Removing {self.label[key]}')
+                    self._pegLayout.removeWidget(self.label[key]) 
+
+        self._clearPegCoords()
+        self.generalLayout.removeItem(self._pegLayout)
+        
+        return
+    
     def _createPegBoard(self):
         """Creates the Galton Board"""
-        pegLayout = QGridLayout()
+        self._pegLayout = QGridLayout()
         self.pegCoords = {}
         
         boardContentCoords = [(x,y) for x in range (self._boardVertBlocks) for y in range(self._boardHorBlocks)]
         for x, y in boardContentCoords:
             self.pegCoords[self._createKeyFromCoords(x,y)] = (x,y)
             
-        #print (self.pegCoords)
+        print (self.pegCoords)
             
         self._setPegCoords()
         #print (self._pegCoords)
@@ -420,10 +666,10 @@ class GaltonBoardUi(QMainWindow):
             self.label[key].setScaledContents(True)
             #label.setSpacing(0)
             self.label[key].setContentsMargins(0, 0, 0, 0)
-            pegLayout.addWidget(self.label[key], coords[0], coords[1])
+            self._pegLayout.addWidget(self.label[key], coords[0], coords[1])
                                 
         # Add to general layout
-        self.generalLayout.addLayout(pegLayout)
+        self.generalLayout.addLayout(self._pegLayout)
         
         return
         
@@ -441,6 +687,40 @@ class GaltonBoardUi(QMainWindow):
                         
         return
         
+    def _clearPegCoords(self):
+        self._pegCoords = []
+        
+        return
+        
+    def _clearResultsData(self):
+        if self._bucketLayout is not None:
+            for key, _ in self._bucketCoords.items():
+                #print (f'key = {key}')
+                self.buckets[key].setText(f'0')
+    
+        return
+        
+    def _clearResultsDisplay(self):
+        print(f'In _clearResultsDisplay')
+        if self._bucketLayout is not None:
+            for key, _ in self._bucketCoords.items():
+                #print (f'key = {key}')
+                self.buckets[key].clear()
+                if self.buckets[key] is not None:
+                    #print (f'Removing {self.buckets[key]}')
+                    self._bucketLayout.removeWidget(self.buckets[key])    
+                    
+            self._stats.clearBucketValues()
+                    
+            self._clearBucketCoords()
+            self.generalLayout.removeItem(self._bucketLayout)
+        
+        return
+        
+    def _clearBucketCoords(self):
+        self._bucketCoords = {}
+        self._bucketContentCoords = []
+        
     def _createResultsDisplay(self):
         """This display updates the user with the current status of the events."""
         self._bucketLayout = QGridLayout()
@@ -448,8 +728,8 @@ class GaltonBoardUi(QMainWindow):
         
         self._bucketLayout.setSpacing(self._blockWidthPx)
         
-        bucketContentCoords = [ (self._boardHorBlocks, y) for y in range(self._boardHorBlocks)]
-        for x,y in bucketContentCoords:
+        self._bucketContentCoords = [ (self._boardHorBlocks, y) for y in range(self._boardHorBlocks)]
+        for x,y in self._bucketContentCoords:
             # calculate and the bucket id as the key - 0, 1, 2 etc
             # to align with the logic for counting R's
             if y%2 == 0:
@@ -457,15 +737,18 @@ class GaltonBoardUi(QMainWindow):
           
         # Need to display blank blocks along side the Edit boxes
         for key, coords in self._bucketCoords.items():
-            print (f'key = {key}')
+            #print (f'key = {key}')
             self.buckets[key] = QLineEdit(self)            
             # Basic layout params   
             self.buckets[key].setFixedHeight(50)
+            self.buckets[key].setFixedWidth(self._blockWidthPx)
             self.buckets[key].setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
             self.buckets[key].setReadOnly(True)
-            self.buckets[key].setFont(QFont("Arial",12))
+            self.buckets[key].setFont(QFont("Arial",15))
             self.buckets[key].setContentsMargins(0, 0, 0, 0)
-            self.buckets[key].setFixedSize(self._blockWidthPx, self._blockHeightPx)
+            #self.buckets[key].setToolTip(f'Value = {self.buckets[key].text()}')
+            #self.buckets[key].installEventFilter(self)
+
             self._bucketLayout.addWidget(self.buckets[key], coords[0], coords[1])
 
         # Add to the general layout
@@ -476,7 +759,7 @@ class GaltonBoardUi(QMainWindow):
     def _initBucketValues(self):
         """This function initializes the values of each bucket."""
         for key, _ in self._bucketCoords.items():
-            print (f'{key}')
+            #print (f'{key}')
             self.buckets[key].setText(f"0")
             
             
