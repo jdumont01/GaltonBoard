@@ -111,7 +111,7 @@ class statisticsView():
         
     def getBucketID(self):
         # Count the number of Right entries to determine which bucket receives the tally
-        print (self._cntR)
+        #print (self._cntR)
         self._cntR = self._evtList.count("R")
         
         return self._cntR 
@@ -133,7 +133,7 @@ class statisticsView():
 class GaltonBoardUi(QMainWindow):
     """Galton Board Main Window"""
     
-    def __init__(self, board_depth = 7, eventTimer = 5, nBalls= 5, widthP = 800, heightP = 900):
+    def __init__(self, board_depth = 7, eventTimer = 1, nBalls= 5, widthP = 800, heightP = 900):
         """View UI Initializer"""
         
         super(GaltonBoardUi, self).__init__()
@@ -234,17 +234,29 @@ class GaltonBoardUi(QMainWindow):
         helpMenu = menuBar.addMenu("&Help")        
 
     def _createMenuActions(self):
+        """Create the Board Menu Options with keyboard shortcuts."""
         # Creating actions using the second constructor
         self.startAction = QAction("&Start", self)
+        self.startAction.setShortcut("Ctrl+S")
         self.stopAction = QAction("S&top", self)
+        self.stopAction.setShortcut("Ctrl+T")
         self.resetAction = QAction("&Reset", self)
+        self.resetAction.setShortcut("Ctrl+R")
         self.pauseAction = QAction("&Pause", self)
+        self.pauseAction.setShortcut("Ctrl+P")
         self.resumeAction = QAction("R&esume", self)
-        self.exitAction = QAction("&Exit", self)
+        self.resumeAction.setShortcut("Ctrl+E")
+        self.exitAction = QAction("E&xit", self)
+        self.exitAction.setShortcut("Ctrl+X")
         self.helpContentAction = QAction("&Help Content", self)
+        self.helpContentAction.setShortcut("Ctrl+H")
         self.aboutAction = QAction("&About", self)
+        self.aboutAction.setShortcut("Ctrl+A")
+                
+        return
         
     def _connectMenuActions(self):
+        """Connect the menu options to the functions that contain the logic."""
         self.startAction.triggered.connect(self.startBoard)
         self.stopAction.triggered.connect(self.stopBoard)
         self.resetAction.triggered.connect(self.resetBoard)
@@ -488,7 +500,7 @@ class GaltonBoardUi(QMainWindow):
     def _clearWidgetsFromLayout(self, layout):
     
         for j in reversed(range(layout.count())): 
-            print (f'{j}')
+            #print (f'{j}')
             widgetToRemove = layout_item.itemAt(j).widget()
             
             if widgetToRemove is not None:
@@ -639,7 +651,7 @@ class GaltonBoardUi(QMainWindow):
         for x, y in boardContentCoords:
             self.pegCoords[self._createKeyFromCoords(x,y)] = (x,y)
             
-        print (self.pegCoords)
+        #print (self.pegCoords)
             
         self._setPegCoords()
         #print (self._pegCoords)
