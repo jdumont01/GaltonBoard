@@ -41,6 +41,7 @@ import      matplotlib.animation as animation
 from        matplotlib import cm
 from        matplotlib.ticker import LinearLocator, FormatStrFormatter
 import      matplotlib
+import      sys
 
 _sysrand = random.SystemRandom()
 
@@ -292,7 +293,7 @@ class GaltonBoardUi(QMainWindow):
 
     def startAbout(self):
         """ """
-        s = f'Version:  {__version__}\nAuthor:  {__author__}'
+        s = f'Version:  {__version__}\nAuthor:  {__author__}\nPython Version:  {sys.version}\nVersion Info:  {sys.version_info}'
         QMessageBox.about(self, "About Galton Board", s) 
         #msg.setIcon(QMessageBox.Information)
         #msg.setStandardButtons(QMessageBox.Ok)
