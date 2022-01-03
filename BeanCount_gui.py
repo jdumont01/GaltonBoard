@@ -41,6 +41,14 @@ import      matplotlib.animation as animation
 from        matplotlib import cm
 from        matplotlib.ticker import LinearLocator, FormatStrFormatter
 import      matplotlib
+matplotlib.use('Qt5Agg')
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
+
+import pandas
+from collections import Counter
+
 import      sys
 
 _sysrand = random.SystemRandom()
@@ -67,9 +75,65 @@ class BoardState():
     paused = 'PAUSED'           # board is paused    
     stopped = 'STOPPED'         # board activity has been stopped
     ready = 'READY'             # board is ready to be used
-    
-class statisticsView():
 
+class MplCanvas(FigureCanvasQTAgg):
+    """General use class to display matplotlib objects"""
+    """Ref https://www.pythonguis.com/tutorials/plotting-matplotlib/ """
+    
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = self.fig.add_subplot(111)
+        super(MplCanvas, self).__init__(self.fig)
+
+class statisticsView(QMainWindow):
+    """Display all stats."""
+    def __init__(self, parent=None):
+        super(statisticsView, self).__init__(parent)
+        
+        self.statusBar = QStatusBar()
+        self.setStatusBar(self.statusBar)
+        self.statusBar.setStyleSheet("border : 2px solid black;")
+        self.statusBar.showMessage(f'Starting')
+        
+        # setting title to the window
+        self.setWindowTitle('Galton Board Results')
+
+        # setting geometry to the window
+        self.setGeometry(100, 100, 800, 800)
+        #self.setFixedSize(self._boardWidthPx, self._boardHeightPx)
+        
+        # This class can display the results array and the expected results
+        # in a histogram from numpy
+        
+        # Create the maptlotlib FigureCanvas object,
+        # which defines a single set of axes as self.axes.
+        self._sc = MplCanvas(self, width=5, height=4, dpi=100)
+        
+        return
+        
+    def __del__(self):
+        del self._sc
+        
+        return
+        
+    def displayResultsHistogram(self, data):
+        """displayResultsHistogram"""
+        #self._sc.bins = np.linspace(ceil(min(data)), floor(max(data)), len(data))
+        #self._sc.plt.xlim([min(data)-5, max(data)+5])
+
+        #self._sc.plt.hist(data, bins=self._sc.bins, alpha=0.5)
+        #self._sc.plt.title('Results from Galton Board')
+        #self._sc.plt.xlabel('Bucket Number')
+        #self._sc.plt.ylabel('Frequency')
+        self._sc.axes.set_xlabel('Bucket Number')
+        self._sc.axes.set_ylabel('Frequency')
+
+        self.setCentralWidget(self._sc)
+        
+        self._sc.show()
+   
+class GaltonBoardResultTracking():
+    """Calculate and display all stats."""
     def __init__(self, numEvents = 7, numSamples = 50):
         self._nEvents = numEvents
         self._nSamples = numSamples
@@ -132,6 +196,17 @@ class statisticsView():
         #print (self._evtList)
         return str(self._evtList)
     
+    def getResultsArray(self):
+        print (f'In getResultsArray: {self._eventTotalAry}')
+        return self._eventTotalAry
+        
+    def getResultsInLists(self):
+        
+        #for key in range(self._eventTotalAry):
+        #print (f'{key}, {self._eventTotalAry[key]}')
+        print (f'{self._eventTotalAry}')
+        return
+        
 class GaltonBoardBall():
     """Ball class when the Galton Board supports multiple in-play balls."""
     def __init__(self, xValue = 0, yValue = 0):
@@ -175,16 +250,15 @@ class GaltonBoardBall():
     def getBallYCoord(self):
         #print (f'In getBallYCoord: {self._ballY}')
         return self._ballY
-        
-        
+               
 # creating game window
 class GaltonBoardUi(QMainWindow):
     """Galton Board Main Window"""
     
-    def __init__(self, board_depth = 7, eventTimer = 1, nBalls= 5, widthP = 800, heightP = 900, bDebug = True):
+    def __init__(self, board_depth = 7, parent=None, eventTimer = 1, nBalls= 5, widthP = 800, heightP = 900, bDebug = True):
         """View UI Initializer"""
         
-        super(GaltonBoardUi, self).__init__()
+        super(GaltonBoardUi, self).__init__(parent)
         self._boardState = BoardState()
         self._currBoardState = self._boardState.init
         
@@ -226,7 +300,7 @@ class GaltonBoardUi(QMainWindow):
         #self._ballY = 0  #floor(self._boardHorBlocks/2)
         
         # Get a stats object
-        self._stats = statisticsView(self._boardDepth, self._nBalls)
+        self._stats = GaltonBoardResultTracking(self._boardDepth, self._nBalls)
         
         # creating a board object
         # self.board = Board(self)
@@ -251,6 +325,8 @@ class GaltonBoardUi(QMainWindow):
         #self.setGeometry(100, 100, 800, 800)
         self.setFixedSize(self._boardWidthPx, self._boardHeightPx)
 
+        # track all stats UIs
+        self.statUiList = list()
         # adding board as a central widget
         #self._setCentralWidget(self.board)
         self.generalLayout = QVBoxLayout()
@@ -269,6 +345,20 @@ class GaltonBoardUi(QMainWindow):
         # showing the main window
         self.show()
         
+        return
+
+    def __del__(self):
+        """Galton Board Destructor"""
+        self._currBoardState = self._boardState.stopped
+        self.timer.stop()
+
+        for item in self.statUiList:
+            self.statUiList.remove(item)
+                  
+        #self._houseCleaning()
+        
+        return
+        
     def _createMenuBar(self):
         """Create Menu Bar"""
         menuBar = QMenuBar(self)
@@ -286,6 +376,7 @@ class GaltonBoardUi(QMainWindow):
         boardMenu.addAction(self.exitAction)
 
         statisticsMenu = menuBar.addMenu("&Statistics")        
+        statisticsMenu.addAction(self.showStatisticsViewAction)
 
         helpMenu = menuBar.addMenu("&Help")        
         helpMenu.addAction(self.helpContentAction)
@@ -310,8 +401,8 @@ class GaltonBoardUi(QMainWindow):
         self.exitAction = QAction("E&xit", self)
         self.exitAction.setShortcut("Ctrl+X")
         
-        self.aboutAction = QAction("&Results", self)
-        self.aboutAction.setShortcut("Ctrl+D")
+        self.showStatisticsViewAction = QAction("Res&ults", self)
+        self.showStatisticsViewAction.setShortcut("Ctrl+U")
 
         self.helpContentAction = QAction("&Help Content", self)
         self.helpContentAction.setShortcut("Ctrl+H")
@@ -322,7 +413,7 @@ class GaltonBoardUi(QMainWindow):
         self.gettingStartedAction.setShortcut("Ctrl+G")
                 
         return
-        
+           
     def _connectMenuActions(self):
         """Connect the menu options to the functions that contain the logic."""
         # Board Menu Options
@@ -334,11 +425,19 @@ class GaltonBoardUi(QMainWindow):
         self.exitAction.triggered.connect(self.exitBoard)
         
         # Statistics Menu Options
+        self.showStatisticsViewAction.triggered.connect(self.createResultsView)
         
         # Help Menu Options
         self.startAboutContent.triggered.connect(self.startAbout)
+  
+    def createResultsView(self):
+        """Show results"""
+        resultsDisplay = statisticsView(self)
+        self.statUiList.append(resultsDisplay)
+        resultsDisplay.displayResultsHistogram(self._stats.getResultsArray())
+        resultsDisplay.show()
         
-        # Getting Started Menu Options
+        return       
 
     def startAbout(self):
         """ """
@@ -435,9 +534,6 @@ class GaltonBoardUi(QMainWindow):
     def helpContent(self):
         print (f'In helpContent')
         
-    def aboutContent(self):
-        print (f'In aboutAction')
-    
     def _initialize(self):
         self.statusBar.showMessage(f'Select Board --> Start to start the Galton Board.')
         self._ballCtr = 0
@@ -459,7 +555,7 @@ class GaltonBoardUi(QMainWindow):
             self._createBoardHeader()        
             self._createPegBoard()
             self._createResultsDisplay()
-            self._stats = statisticsView(self._boardDepth, self._nBalls)
+            self._stats = GaltonBoardResultTracking(self._boardDepth, self._nBalls)
 
         return
         
@@ -474,7 +570,7 @@ class GaltonBoardUi(QMainWindow):
             #self._clearPegBoard()
             #self._clearLayout(self.generalLayout)
             self._houseCleaning()
-            self._stats = statisticsView(self._boardDepth, self._nBalls)
+            self._stats = GaltonBoardResultTracking(self._boardDepth, self._nBalls)
             self._createBoardHeader()        
             self._createPegBoard()
             self._createResultsDisplay()
