@@ -26,7 +26,7 @@ from PyQt5.QtGui import QIntValidator,QDoubleValidator
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtCore import QBasicTimer
+from PyQt5.QtCore import QBasicTimer, QTimer
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QEvent
 
@@ -87,9 +87,10 @@ class MplCanvas(FigureCanvasQTAgg):
 
 class statisticsView(QMainWindow):
     """Display all stats."""
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, refreshPeriod = 100):
         super(statisticsView, self).__init__(parent)
         
+        self._refreshPeriod = refreshPeriod
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
         self.statusBar.setStyleSheet("border : 2px solid black;")
@@ -104,30 +105,93 @@ class statisticsView(QMainWindow):
         
         # This class can display the results array and the expected results
         # in a histogram from numpy
+               
+        # creating a timer
+        #self.refreshTimer = QTimer()
+        #self.refreshTimer.timeout.connect(self.update)        
         
         # Create the maptlotlib FigureCanvas object,
         # which defines a single set of axes as self.axes.
         self._sc = MplCanvas(self, width=5, height=4, dpi=100)
         
+        self._initialize()
+        
         return
         
     def __del__(self):
-        del self._sc
+        #del self._sc  
         
+        return
+    
+    def _initialize(self):
+        #self.refreshTimer.start(self._refreshPeriod)               
+
+        return
+
+    def update(self):
+        self.refreshTimer.stop()
+        self.refreshResultsHistogram()
+        
+        return
+        
+    # time event method
+    def timerEvent(self, event):
+        # checking timer id
+        if event.timerId() == self.refreshTimer.timerId():
+            print (f'Refresh Timer triggered')
+            self.statusBar.showMessage(f'Timer Event {event} ')
+        
+        return
+        
+    def _getPlotText(self):
+        self._sc.axes.set_title('Results from Galton Board')
+        self._sc.axes.set_xlabel('Bucket Number')
+        self._sc.axes.set_ylabel('Frequency')
+
+        return
+        
+    def refreshResultsHistogram(self, data):
+        #print (f'refreshResultsHistogram {data}')
+        bins = []
+        hist = []
+        binsOut = []
+        
+        self._sc.axes.clear()
+        self._sc.axes.set_frame_on(True)
+        self._sc.axes.set_axis_on()
+        self._sc.axes.grid(True)
+        self._getPlotText()
+        
+        for i in range(len(data)):
+            bins.append(i)
+            
+        hist, binsOut = np.histogram(data, bins=bins)
+        #print (f'data = {data}')
+        #print (f'hist = {hist}')
+        #print (f'bins = {binsOut}')
+        
+        self._sc.axes.plot(bins, data, '-', color='blue')
+        self.setCentralWidget(self._sc)        
+        self._sc.draw()
+    
         return
         
     def displayResultsHistogram(self, data):
         """displayResultsHistogram"""
-        #self._sc.bins = np.linspace(ceil(min(data)), floor(max(data)), len(data))
-        #self._sc.plt.xlim([min(data)-5, max(data)+5])
+        bins = []
 
-        #self._sc.plt.hist(data, bins=self._sc.bins, alpha=0.5)
-        #self._sc.plt.title('Results from Galton Board')
-        #self._sc.plt.xlabel('Bucket Number')
-        #self._sc.plt.ylabel('Frequency')
-        self._sc.axes.set_xlabel('Bucket Number')
-        self._sc.axes.set_ylabel('Frequency')
-
+        self._getPlotText()
+        
+        for i in range(len(data)):
+            bins.append(i)
+            
+        hist, binsOut = np.histogram(data, bins=bins)
+        #print (f'data = {data}')
+        #print (f'hist = {hist}')
+        #print (f'bins = {binsOut}')
+        
+        self._sc.axes.plot(bins, data, '-', color='blue')
+        
         self.setCentralWidget(self._sc)
         
         self._sc.show()
@@ -337,6 +401,13 @@ class GaltonBoardUi(QMainWindow):
         #self._createUserMessageDisplay()
         #self._createPegBoard()
         #self._createResultsDisplay()
+
+        # creating a timer to refresh stats
+        self.resultsDisplay = statisticsView(self)
+        self.refreshTimer = QTimer()
+        self.refreshTimer.timeout.connect(self._refreshStatsView)  
+        self._refreshStatsPeriod = 5000
+
         self._initialize()
 
         # starting the board object
@@ -351,12 +422,22 @@ class GaltonBoardUi(QMainWindow):
         """Galton Board Destructor"""
         self._currBoardState = self._boardState.stopped
         self.timer.stop()
-
+        self.refreshTimer.stop()
+        
         for item in self.statUiList:
             self.statUiList.remove(item)
                   
         #self._houseCleaning()
         
+        return
+
+    def _refreshStatsView(self):
+        """Call the Views verson of refreshing the stats UI"""
+        self.refreshTimer.stop()
+        self.resultsDisplay.refreshResultsHistogram(self._stats.getResultsArray())
+        self.resultsDisplay.show()
+        self.refreshTimer.start(self._refreshStatsPeriod)       
+
         return
         
     def _createMenuBar(self):
@@ -432,10 +513,9 @@ class GaltonBoardUi(QMainWindow):
   
     def createResultsView(self):
         """Show results"""
-        resultsDisplay = statisticsView(self)
-        self.statUiList.append(resultsDisplay)
-        resultsDisplay.displayResultsHistogram(self._stats.getResultsArray())
-        resultsDisplay.show()
+        self.statUiList.append(self.resultsDisplay)
+        self.resultsDisplay.displayResultsHistogram(self._stats.getResultsArray())
+        self.resultsDisplay.show()
         
         return       
 
@@ -445,6 +525,8 @@ class GaltonBoardUi(QMainWindow):
         QMessageBox.about(self, "About Galton Board", s) 
         #msg.setIcon(QMessageBox.Information)
         #msg.setStandardButtons(QMessageBox.Ok)
+        
+        return
 
     def startBoard(self):
         print (f'In startBoard; board state = {self._currBoardState}')
@@ -545,6 +627,10 @@ class GaltonBoardUi(QMainWindow):
 
         #self._ballX = 0
         #self._ballY = floor(self._boardHorBlocks/2)
+                
+        self.refreshTimer.start(self._refreshStatsPeriod)       
+
+        return  
 
     def _restart(self):
         print (f'board state = {self._currBoardState}')
