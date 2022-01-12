@@ -232,7 +232,7 @@ class statisticsView(QMainWindow):
         self._plot = self._sc.axes.plot(bins, data, '-', color='blue')
         #self.setCentralWidget(self._sc)        
         self.annot = self._sc.axes.annotate("", xy=(0,0),textcoords="offset points",
-                bbox=dict(boxstyle="round", fc="black", ec="b", lw=2),
+                xytext=(50, 50), bbox=dict(boxstyle="round", fc="black", ec="b", lw=2),
                 arrowprops=dict(arrowstyle="->"))
 
         self._sc.draw()
