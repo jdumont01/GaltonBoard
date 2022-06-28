@@ -42,7 +42,7 @@ from PyQt5.QtCore import (
     Qt,                     #
     QEvent                  #
 )
-
+import math
 from BallState                      import *
 from BoardState                     import *
 from GaltonBoardBall                import *
@@ -78,10 +78,13 @@ class GaltonBoardUi(QMainWindow):
         self._pegCoords = []
         self.pegCoords = {}
         self._bucketCoords = []
+        self._expBucketCoords = []
         self._bucketContentCoords = []
+        self._bucketExpectationContentCoords = []
         self._eventTimerInterval = eventTimer
         self.label = {}
         self.buckets = {}
+        self.expBuckets = {}
         self._nBalls = nBalls  
         self._ballCtr = 0
 
@@ -383,6 +386,7 @@ class GaltonBoardUi(QMainWindow):
             self._createBoardHeader()        
             self._createPegBoard()
             self._createResultsDisplay()
+            self._createExpectedResultsDisplay()
             self._stats = GaltonBoardResultTracking(self._boardDepth, self._nBalls)
 
         return
@@ -402,9 +406,11 @@ class GaltonBoardUi(QMainWindow):
             self._createBoardHeader()        
             self._createPegBoard()
             self._createResultsDisplay()
-
+            self._createExpectedResultsDisplay()
+            
             # Initialize the bucket values
             self._initBucketValues()
+            self._initExpectationBucketValues()
             self._initialize()
 
             self._currBoardState = self._boardState.ready
@@ -721,6 +727,7 @@ class GaltonBoardUi(QMainWindow):
             for key, _ in self._bucketCoords.items():
                 #print (f'key = {key}')
                 self.buckets[key].setText(f'0')
+                self.expBuckets[key].setText(f'0')
     
         return
         
@@ -791,12 +798,62 @@ class GaltonBoardUi(QMainWindow):
 
         return
         
+    def _createExpectedResultsDisplay(self):
+        """This display updates the user with the current status of the events."""
+        self._expBucketLayout = QGridLayout()
+        self._expBucketCoords = {}
+        self._expBucketLayout.setSpacing(self._blockWidthPx)
+        
+        print(f'{self._boardHorBlocks}')
+        print(f'{self._bucketExpectationContentCoords}')
+        self._bucketExpectationContentCoords = [ (self._boardHorBlocks, y) for y in range(self._boardHorBlocks)]
+        for x,y in self._bucketExpectationContentCoords:
+            # calculate and the bucket id as the key - 0, 1, 2 etc
+            # to align with the logic for counting R's
+            if y%2 == 0:
+                self._expBucketCoords[floor(y/2)] = (x,y)
+          
+        # Need to display blank blocks along side the Edit boxes
+        for key, coords in self._expBucketCoords.items():
+            print (f'key = {key}')
+            self.expBuckets[key] = QLineEdit(self)            
+            # Basic layout params   
+            self.expBuckets[key].setFixedHeight(50)
+            self.expBuckets[key].setFixedWidth(self._blockWidthPx)
+            self.expBuckets[key].setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            self.expBuckets[key].setReadOnly(True)
+            self.expBuckets[key].setFont(QFont("Arial",15))
+            self.expBuckets[key].setContentsMargins(0, 0, 0, 0)
+            #self.expBuckets[key].setToolTip(f'Value = {self.buckets[key].text()}')
+            #self.expBuckets[key].installEventFilter(self)
+            self.expBuckets[key].setStyleSheet("""QLineEdit { background-color: green; color: white }""")
+
+            self._expBucketLayout.addWidget(self.expBuckets[key], coords[0], coords[1])
+
+        # Add to the general layout
+        self.generalLayout.addLayout(self._expBucketLayout)
+
+        return
+        
     def _initBucketValues(self):
         """This function initializes the values of each bucket."""
         for key, _ in self._bucketCoords.items():
             #print (f'{key}')
             self.buckets[key].setText(f"0")
-            
+
+        return
+        
+        
+    def _initExpectationBucketValues(self):
+        """This function initializes the values of each bucket."""
+        for key, _ in self._expBucketCoords.items():
+            #print (f'{key}')
+            expVal = math.floor(self._getNumBalls() * (math.comb(self._getBoardDepth(), key)/(math.pow(2, self._getBoardDepth()))))
+            self.expBuckets[key].setText(f'{expVal}')
+        
+        return
+        
+        
             
     # *****************    
     # Public Interfaces
