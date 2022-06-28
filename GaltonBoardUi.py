@@ -322,7 +322,7 @@ class GaltonBoardUi(QMainWindow):
             self._clearResultsDisplay()
             self._clearPegBoard()
             self._clearLayout(self.generalLayout)
-            del self._stats 
+            #del self._stats 
         else:
             print(f'Do nothing for now for Board State {self._currBoardState}')
             
@@ -742,8 +742,9 @@ class GaltonBoardUi(QMainWindow):
                     self._bucketLayout.removeWidget(self.buckets[key])    
                 self.buckets[key].clear()
     
-            self._stats.clearBucketValues()                    
+            #self._stats.clearBucketValues()                    
             self._clearBucketCoords()
+            self._clearExpcetationBucketCoords()
             self.generalLayout.removeItem(self._bucketLayout)
         
         return
@@ -759,6 +760,20 @@ class GaltonBoardUi(QMainWindow):
         
         if self._bucketCoords:
             self._bucketCoords = {}
+
+        return
+
+    def _clearExpcetationBucketCoords(self):
+        
+        if self._bucketExpectationContentCoords:
+            self._bucketExpectationContentCoords = []
+        
+        for key, _ in self._expBucketCoords.items():
+            if self.expBuckets[key] is not None:
+                self.expBuckets.pop(key)
+        
+        if self._expBucketCoords:
+            self._expBucketCoords = {}
 
         return
         
