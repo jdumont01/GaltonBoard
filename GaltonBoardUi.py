@@ -127,6 +127,9 @@ class GaltonBoardUi(QMainWindow):
         #self.setGeometry(100, 100, 800, 800)
         self.setFixedSize(self._boardWidthPx, self._boardHeightPx)
 
+        # UI characteristics
+        self.defaultFontSize = 15
+        
         # track all stats UIs
         self.statUiList = list()
         # adding board as a central widget
@@ -264,7 +267,6 @@ class GaltonBoardUi(QMainWindow):
             self.refreshTimer.start(self._refreshStatsPeriod)       
             
         return
-
 
     def startAbout(self):
         """ """
@@ -560,10 +562,19 @@ class GaltonBoardUi(QMainWindow):
         
         return nHorizontalBlocks, nVerticalBlocks
         
+    def _resizeBoardBasedOnInputs(self):
+        """Calculate the fraction factor that will be used to determine how large the   
+            board elements are based on the users input."""
+    
+        print(f'{floor(sqrt((self._boardHeightPx * self._boardWidthPx)/(self._boardHorBlocks * self._boardVertBlocks)))}')
+        
+        return floor(sqrt((self._boardHeightPx * self._boardWidthPx)/(self._boardHorBlocks * self._boardVertBlocks)))
+        
+        
     def _calculateBlockSize(self):
         """Size the Galton Board widgets based on depth"""
         # assume square for now
-        blockWidth = blockHeight = floor(sqrt((self._boardHeightPx * self._boardWidthPx)/(self._boardHorBlocks * self._boardVertBlocks)))
+        blockWidth = blockHeight = self._resizeBoardBasedOnInputs()
         
         return blockWidth, blockHeight
         
