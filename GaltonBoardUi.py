@@ -435,7 +435,7 @@ class GaltonBoardUi(QMainWindow):
             if self._ball.getBallState() == self._ballState.init:
                 self._setCurrentBallCount(self._ballCtr + 1)
                 self.statusBar.showMessage(f'Timer Event | Current State of Ball is Ready')                
-                self.label[self._createKeyFromCoords(self._ball.getBallXCoord(), self._ball.getBallYCoord())].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))  
+                self.label[self._createKeyFromCoords(self._ball.getBallXCoord(), self._ball.getBallYCoord())].setPixmap(QPixmap(".\\images\\filled_circle1600.png"))  
                 self._stats.resetEventList()
                 self._ball.setBallState(self._ballState.inProgress)
                 # starting timer
@@ -459,13 +459,13 @@ class GaltonBoardUi(QMainWindow):
                     else:
                         self._stats.updatePathList(rndN)
                         self._ball.setBallCoords((self._ball.getBallXCoord() - 1), (self._ball.getBallYCoord() + 1))
-                    self.label[self._createKeyFromCoords(self._ball.getBallXCoord(), self._ball.getBallYCoord())].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))  
+                    self.label[self._createKeyFromCoords(self._ball.getBallXCoord(), self._ball.getBallYCoord())].setPixmap(QPixmap(".\\images\\filled_circle1600.png"))  
                     self.statusBar.showMessage(f'Timer Event | Current Stats:  ')                
                 else:
                     self.statusBar.showMessage(f'Timer Event | Current State of Ball Coords: {self._ball.getBallXCoord()}, {self._ball.getBallYCoord()}')
                     self.label[self._createKeyFromCoords(self._ball.getBallXCoord(), self._ball.getBallYCoord())].clear()
                     self._ball.setBallCoords(self._ball.getBallXCoord() + 1, self._ball.getBallYCoord())
-                    self.label[self._createKeyFromCoords(self._ball.getBallXCoord(), self._ball.getBallYCoord())].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))  
+                    self.label[self._createKeyFromCoords(self._ball.getBallXCoord(), self._ball.getBallYCoord())].setPixmap(QPixmap(".\\images\\filled_circle1600.png"))  
 
                 self._messageBox.setText(f'Ball # {self._getCurrentBallCount()} updated path {self._stats.returnPathList()}')
                 self.timer.start(self._eventTimerInterval, self)                    
@@ -700,7 +700,7 @@ class GaltonBoardUi(QMainWindow):
             else:
                 if coords in self._pegCoords:
                     #print (f'[{x}, {y}]')
-                    self.label[key].setPixmap(QPixmap("c:\\users\\jdumo\\documents\\filled_circle1600.png"))
+                    self.label[key].setPixmap(QPixmap(".\\images\\filled_circle1600.png"))
                     self.label[key].setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
                     
             self.label[key].setFixedSize(self._blockWidthPx, self._blockHeightPx)
