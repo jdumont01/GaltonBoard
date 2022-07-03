@@ -8,14 +8,17 @@ There is a Jupyter Notebook in the JupyterNotebook folder that describes the pro
 technical detail.  It also includes the derivations of the mean and variance for the Binomial
 Distribution as well as how the Poisson and Guassian Distributions are derived from the 
 Binomial Distribution.
-## Getting Stared with the Galton Board simulator.
+## Getting Stared with the Galton Board simulator
 ### Main Menu Options
+There are 4 main menu options that are described here.
 #### Board
 The Board menu option allows the user to start, stop, pause and resume a simulation.
 #### Statistics
 The Statistics menu option creates a pop out window showing the accumulated number of balls in each bucket in real time.  It is updated every 5 seconds.
 #### Help
 The Help menu option displays the About screen with details pertaining to the state of the program code.
+#### Getting Started
+The Getting Started menu options displays the steps needed to start a simulation.
 ### How Start Simulation:
 To start a simulation the user will navigate to the Board menu and select Start.
 The user will be required to input: 
