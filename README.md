@@ -4,7 +4,8 @@ The purpose of this project is to simulate a Galton Board for the purposes of de
 how binomial statistics work.  I love creating games and programs that demonstrate aspects
 of mathematics for others to learn.
 ## References
-There is a [Jupyter Notebook](./JupyterNotebook/GaltonBoard.ipynb) in the JupyterNotebook folder that describes the project in more
+There is a [Jupyter Notebook](https://github.com/jdumont01/GaltonBoard/blob/main/JupyterNotebook/Galton%20Board.ipynb)
+in the JupyterNotebook folder that describes the project in more
 technical detail.  It also includes the derivations of the mean and variance for the Binomial
 Distribution as well as how the Poisson and Guassian Distributions are derived from the 
 Binomial Distribution.
@@ -19,11 +20,20 @@ Users should be familiar with the basics of combinatorics or just enjoy playing 
 Python 3.9.1 and PyQT5 were used to develop the simulation.
 ## Getting Stared with the Galton Board simulator
 ### Installing the Files
+The following files will need to be installed
+- BallState.py
+- BoardState.py
+- GaltonBoardBall.py
+- GaltonBoardResultTracking.py
+- MplCanvas.py
+- statisticsView.py
+- ./images
+- ./images/filled_circle1600.png
 ### Installing Extra Modules
 The following modules will need to be installed (via pip or similar):
-PyQT
-matplotlib
-matplotlib.backends.backend_qt5agg for MplCanvas
+- PyQT
+- matplotlib
+- matplotlib.backends.backend_qt5agg for MplCanvas
 ### Running the Simulator
 Type the following command to start the simulator (assuming the current working directory is the folder where the py files are installed):
 python GaltonBoard.py
