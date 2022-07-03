@@ -191,11 +191,13 @@ class GaltonBoardUi(QMainWindow):
         statisticsMenu.addAction(self.showStatisticsViewAction)
 
         helpMenu = menuBar.addMenu("&Help")        
-        helpMenu.addAction(self.helpContentAction)
-        helpMenu.addSeparator()
+        # The following will be added and implemented in a later version
+        #helpMenu.addAction(self.helpContentAction)
+        #helpMenu.addSeparator()
         helpMenu.addAction(self.startAboutContent)
         
         gettingStartMenu = menuBar.addMenu("&Getting Started")
+        gettingStartMenu.addAction(self.gettingStartedAction)
 
     def _createMenuActions(self):
         """Create the Board Menu Options with keyboard shortcuts."""
@@ -216,8 +218,9 @@ class GaltonBoardUi(QMainWindow):
         self.showStatisticsViewAction = QAction("Res&ults", self)
         self.showStatisticsViewAction.setShortcut("Ctrl+U")
 
-        self.helpContentAction = QAction("&Help Content", self)
-        self.helpContentAction.setShortcut("Ctrl+H")
+        # The Help content will be implemented at a later date
+        #self.helpContentAction = QAction("&Help Content", self)
+        #self.helpContentAction.setShortcut("Ctrl+H")
         self.startAboutContent = QAction("&About", self)
         self.startAboutContent.setShortcut("Ctrl+A")
 
@@ -241,7 +244,46 @@ class GaltonBoardUi(QMainWindow):
         
         # Help Menu Options
         self.startAboutContent.triggered.connect(self.startAbout)
-  
+
+        # Getting Started 
+        self.gettingStartedAction.triggered.connect(self.gettingStarted)
+
+        return
+        
+    def gettingStarted(self):
+        """Getting started statement"""
+        s = f'Getting Stared with the Galton Board simulator.'
+        s += f'\n\nMenu Options: '
+        s += f'\nBoard - Start, stop, pause and resume a simulation'
+        s += f'\nStatistics - Generates a pop out window showing the accumulated number of balls in each bucket in real time.  It is updated every 5 seconds.'
+        s += f'\nHelp - Shows the About screen with details pertaining to the state of the program code.'
+        s += f'\n\nStart Simulation: '
+        s += f'\nTo start a simulation the user will navigate to the Board menu and select Start.'
+        s += f'\nThe user will be required to input: '
+        s += f'\n\tthe depth of the board (default = 7)'
+        s += f'\n\tthe number of balls to traverse the board (default = 100)'
+        s += f'\n\tthe interval timer between starting a ball (default = 100 ms).'
+        s += f'\n\t   A timer value of 0 will cause the simulator to go as fast as possible.'
+        s += f'\n\nViewing Results:'
+        s += f'\nThe user can view the path taken by the ball at the top of the main screen.'
+        s += f'\nAt the bottom of the main screen, there are 2 rows of output.'
+        s += f'\nThe top row is the accumulated number of balls in a bucket.'
+        s += f'\nThe bottom row (green) is the expected number of balls for each bucket.'
+        s += f'\nThe expectation value is based on the number of balls defined by'
+        s += f'\nthe user, the depth of the board and the index of the bucket.'
+        msg = QMessageBox()
+        
+        msg.setWindowTitle("Getting Started")
+        msg.setIcon(QMessageBox.Information)        
+        #msg.setInformativeText("Info text")
+        #msg.setDetailedText("details")
+        msg.setText(s) 
+        #msg.setStandardButtons(QMessageBox.Ok)
+        
+        retV = msg.exec()
+        
+        return
+    
     def createResultsView(self):
         """Show results"""
         self.showStatsView = not self.showStatsView
