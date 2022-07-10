@@ -65,6 +65,12 @@ class GaltonBoardUi(QMainWindow):
         self.DEFAULT_BOARD_DEPTH = 7
         self.DEFAULT_EVENT_TIMER = 100
         self.DEFAULT_NUMBER_OF_BALLS = 100
+        self.MIN_BOARD_DEPTH = 2
+        self.MAX_BOARD_DEPTH = 100
+        self.MAX_NUMBER_OF_BALLS = 1000000000
+        self.MIN_NUMBER_OF_BALLS = 1
+        self.MIN_EVENT_TIMER = 0                # ms
+        self.MAX_EVENT_TIMER = 200              # ms
         
         # Create the Menu
         self._createMenuActions()
@@ -322,32 +328,58 @@ class GaltonBoardUi(QMainWindow):
     def startBoard(self):
         print (f'In startBoard; board state = {self._currBoardState}')
 
+        num = self.MIN_BOARD_DEPTH - 1
+        ok = False
+        
         # Board Depth
-        num, ok = QInputDialog.getInt(self, "Board Depth Dialog", "Enter the Board Depth", self.DEFAULT_BOARD_DEPTH)
+        while num < self.MIN_BOARD_DEPTH and ok == False:          
+            num, ok = QInputDialog.getInt(self, "Board Depth Dialog", f'Enter the Board Depth\n(Values:  {self.MIN_BOARD_DEPTH} to {self.MAX_BOARD_DEPTH})', self.DEFAULT_BOARD_DEPTH)
 
-        if ok:
-            self._setBoardDepth(num)
-            #self._inputBoardDepthBox.setText(f'Depth = {self._getBoardDepth()}')
-        else:
-            self.statusBar.showMessage(f'Invalid Board Depth Input')
+            if ok == True and (num >= self.MIN_BOARD_DEPTH and num <= self.MAX_BOARD_DEPTH):
+                self._setBoardDepth(num)
+                #self._inputBoardDepthBox.setText(f'Depth = {self._getBoardDepth()}')
+                break
+            else:
+                self.statusBar.showMessage(f'Invalid Board Depth Input')
+                num = self.MIN_BOARD_DEPTH - 1
+                ok = False
+        # end while
 
         # Number of Balls
-        num, ok = QInputDialog.getInt(self, "Number of Tests Dialog", "Enter the Number of Balls", self.DEFAULT_NUMBER_OF_BALLS)
+        num = self.MIN_NUMBER_OF_BALLS - 1
+        ok = False
 
-        if ok:
-            self._setNumBalls(num)
-            #self._inputNumBallsBox.se.reatText(f'Depth = {self._getNumBalls()}')
-        else:
-            self.statusBar.showMessage(f'Invalid Ball Number Input')       
+        while num < self.MIN_BOARD_DEPTH and ok == False:                      
+            num, ok = QInputDialog.getInt(self, "Number of Tests Dialog", f'Enter the Number of Balls\n(Values:  {self.MIN_NUMBER_OF_BALLS} to {self.MAX_NUMBER_OF_BALLS})', self.DEFAULT_NUMBER_OF_BALLS)
+
+            if ok == True and (num >= self.MIN_NUMBER_OF_BALLS and num <= self.MAX_NUMBER_OF_BALLS):
+                self._setNumBalls(num)
+                #self._inputNumBallsBox.se.reatText(f'Depth = {self._getNumBalls()}')
+                break
+            else:
+                self.statusBar.showMessage(f'Invalid Ball Number Input')       
+                num = self.MIN_NUMBER_OF_BALLS - 1
+                ok = False
+
+        # end while
 
         # Event timer
-        num, ok = QInputDialog.getInt(self, "Set Event Timer", "Set Event Timer (ms)", self.DEFAULT_EVENT_TIMER)
+        num = self.MIN_EVENT_TIMER - 1
+        ok = False
+        
+        while num < self.MIN_BOARD_DEPTH and ok == False:                  
+            num, ok = QInputDialog.getInt(self, "Set Event Timer", f'Set Event Timer (ms)\n(Values:  {self.MIN_EVENT_TIMER} to {self.MAX_EVENT_TIMER})', self.DEFAULT_EVENT_TIMER)
 
-        if ok:
-            self._setEventTimerInterval(num)
-            #self._inputNumBallsBox.se.reatText(f'Depth = {self._getNumBalls()}')
-        else:
-            self.statusBar.showMessage(f'Invalid Time Input')
+            if ok == True and (num >= self.MIN_EVENT_TIMER and num <= self.MAX_EVENT_TIMER):
+                self._setEventTimerInterval(num)
+                #self._inputNumBallsBox.se.reatText(f'Depth = {self._getNumBalls()}')
+                break
+            else:
+                self.statusBar.showMessage(f'Invalid Time Input')
+                num = self.MIN_EVENT_TIMER - 1
+                ok = False
+
+        # end while
         
         #print(f'Current Board state is {self._eventTimerInterval}')
         
