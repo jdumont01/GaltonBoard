@@ -66,7 +66,7 @@ class GaltonBoardUi(QMainWindow):
         self.DEFAULT_EVENT_TIMER = 100
         self.DEFAULT_NUMBER_OF_BALLS = 100
         self.MIN_BOARD_DEPTH = 2
-        self.MAX_BOARD_DEPTH = 100
+        self.MAX_BOARD_DEPTH = 10
         self.MAX_NUMBER_OF_BALLS = 1000000000
         self.MIN_NUMBER_OF_BALLS = 1
         self.MIN_EVENT_TIMER = 0                # ms
