@@ -202,6 +202,10 @@ class GaltonBoardUi(QMainWindow):
             _initialize
                 Initialize the board.  This is the first state the board will enter
                 before the UI starts.
+            
+            args
+            input:  none
+            return: none
         '''
         self.statusBar.showMessage(f'Select Board --> Start to start the Galton Board.')
         self._ballCtr = 0
@@ -218,6 +222,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _configureStatusBar
                 Configures the status bar UI.
+            
+            args
+            input:  none
+            return: none
         '''
         self.setStatusBar(self.statusBar)
         self.statusBar.setStyleSheet("border : 2px solid black;")
@@ -230,6 +238,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _createMenuUI
                 wrapper function to create the menu bar at the top of the UI.
+                    
+            args
+            input:  none
+            return: none
         '''
         self._createMenuActions()
         self._createMenuBar()
@@ -242,6 +254,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _createMenuBar
                 Creates the text and the shortcuts for the main menu options.
+            
+            args
+            input:  none
+            return: none
         '''
         menuBar = QMenuBar(self)
         self.setMenuBar(menuBar)
@@ -279,7 +295,11 @@ class GaltonBoardUi(QMainWindow):
         '''
             _createMenuUI
                 Create the functional hotkeys and second-level menu options.
-        '''
+                    
+            args
+            input:  none
+            return: none
+'''
         # Board menu actions
         self.startAction = QAction("&Start", self)
         self.startAction.setShortcut("Ctrl+S")
@@ -317,8 +337,9 @@ class GaltonBoardUi(QMainWindow):
             _connectMenuActions
                 Assigns the logic to each menu action.
                 
-            args:    none
-            return:  none
+            args
+            input:  none
+            return: none
         '''
         # Board Menu Options
         self.startAction.triggered.connect(self._startBoard)
@@ -344,6 +365,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _gettingStarted
                 Setup the UI for the Getting Started menu option.
+            
+            args
+            input:  none
+            return: none
         '''
         s = f'Getting Stared with the Galton Board simulator.'
         s += f'\n\nMenu Options: '
@@ -382,6 +407,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _createResultsView
                 Logic associated with creating the Stats UI.
+            
+            args
+            input:  none
+            return: none
         '''
         self.showStatsView = not self.showStatsView
         if self.showStatsView :        
@@ -401,6 +430,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _refreshStatsView
                 Call the Views verson of refreshing the stats UI
+            
+            args
+            input:  none
+            return: none
         '''
         if self.showStatsView :
             self.refreshTimer.stop()
@@ -415,6 +448,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _startAbout
                 Logic assoicated with the About action.
+            
+            args
+            input:  none
+            return: none
         '''
         s = f'Galton Board Version:  {__version__}\nAuthor:  {__author__}\nReleased:  {__releaseDate__}\nPython Version:  {sys.version}\nVersion Info:  {sys.version_info}'
         QMessageBox.about(self, "About Galton Board", s) 
@@ -428,6 +465,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _startBoard
                 Logic to get the user input and create the board.
+            
+            args
+            input:  none
+            return: none
         '''
         #print (f'In _startBoard; board state = {self._currBoardState}')
 
@@ -498,6 +539,10 @@ class GaltonBoardUi(QMainWindow):
             _houseCleaning
                 Wrapper to remove UI components so that the board can be rebuilt when
                 the user selects Ctrl-S to restart the simulation.
+            
+            args
+            input:  none
+            return: none
         '''
         if (self._currBoardState in [self._boardState.stopped, self._boardState.inProgress, self._boardState.ready]):
             #Clear widgets from each layouts
@@ -515,6 +560,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _stopBoard
                 Logic to stop the board processing.
+            
+            args
+            input:  none
+            return: none
         '''
         #print (f'In _stopBoard')
         self._messageBox.setText(f'Stopping.....Will implement saving results later.')
@@ -529,6 +578,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _resetBoard
                 Resets the board stats and accumulated data.
+            
+            args
+            input:  none
+            return: none
         '''
         #print (f'In _resetBoard: board state = {self._currBoardState}')
         if (self._currBoardState in [self._boardState.stopped, self._boardState.ready]):
@@ -546,6 +599,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _pauseBoard
                 Logic to stop processing without resetting the board.
+            
+            args
+            input:  none
+            return: none
         '''
         #print (f'In _pauseBoard')
         self._currBoardState = self._boardState.paused
@@ -559,6 +616,10 @@ class GaltonBoardUi(QMainWindow):
             _resumeBoard
                 The board will continue processing from the last pause state without resetting
                 stats.
+            
+            args
+            input:  none
+            return: none
         '''
         #print (f'In _resumeBoard')
         if (self._currBoardState in [self._boardState.stopped, self._boardState.paused]):
@@ -571,7 +632,11 @@ class GaltonBoardUi(QMainWindow):
     def _exitBoard(self):
         '''
             _exitBoard
-                Stops all processing and exits the UI
+                Stops all processing and exits the UI.
+            
+            args
+            input:  none
+            return: none
         '''
         #print (f'In _exitBoard')
         self._currBoardState = self._boardState.stopped
@@ -585,6 +650,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _helpContent
                 UNUSED function - will be implemented in the next version.
+            
+            args
+            input:  none
+            return: none
         '''
         #print (f'In _helpContent')
 
@@ -596,6 +665,10 @@ class GaltonBoardUi(QMainWindow):
             _restart
                 Resets the board UI and stats.  The board will be redrawn with the new 
                 user-defined parameters.
+            
+            args
+            input:  none
+            return: none
         '''
         #print (f'board state = {self._currBoardState}')
         
@@ -615,6 +688,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _start
                 Creates the board.
+            
+            args
+            input:  none
+            return: none
         '''
         #print (f'In _start; board state = {self._currBoardState}')
         self._boardHorBlocks, self._boardVertBlocks = self._calculateBoardGridSize()
@@ -648,6 +725,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _processBallInInit
                 Logic asrsociated with preparing a ball to be released into the board.
+            
+            args
+            input:  none
+            return: none
         '''
         # start the ball counter
         self._setCurrentBallCount(self._ballCtr + 1)
@@ -677,6 +758,10 @@ class GaltonBoardUi(QMainWindow):
                     in play and not in contact with a peg
                     in play and in contact with a peg
                     completed the board traversal
+            
+            args
+            input:  none
+            return: none
         '''
         #print(f'check: {self._ball.getBallXCoord()} {self._boardVertBlocks - 1}')
         # IF block:
@@ -720,6 +805,10 @@ class GaltonBoardUi(QMainWindow):
                 Logic to process the ball when it reaches a bucket based on the 
                 ball's number.  If it is the last ball then set the state that way
                 to complete the simulation.
+            
+            args
+            input:  none
+            return: none
         '''
         # update the user
         self.statusBar.showMessage(f'Timer Event | Current State of Ball : {self._ball.getBallState()}')
@@ -749,6 +838,10 @@ class GaltonBoardUi(QMainWindow):
             _processLastBall
                 Notify the board to stop processing on this event cycle since the
                 last ball was processed in the previous event.
+            
+            args
+            input:  none
+            return: none
         '''
         # update the user
         self.statusBar.showMessage(f'Timer Event | Current State of Ball : {self._ball.getBallState()}')
@@ -770,7 +863,8 @@ class GaltonBoardUi(QMainWindow):
                 timer clock cycle.  This is based on the state of the ball.
                 The ball state types from BallState class.
 
-            args:   event:timer object - contains timer id
+            args   
+            input:  event:timer object - contains timer id
             return: none
         '''
   
@@ -804,7 +898,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _clearLayout
                 Remove widgets from layout.
-                
+            
+            args
+            input:  none
+            return: none
         '''
         
         if layout is not None:
@@ -824,6 +921,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _clearWidgetsFromLayout
                 remove widget objects from the UI.
+            
+            args
+            input:  none
+            return: none
         '''
         for j in reversed(range(layout.count())): 
             #print (f'{j}')
@@ -1103,6 +1204,10 @@ class GaltonBoardUi(QMainWindow):
         '''
             _setPegCoords
                 Calcualtes the coordinates for each peg.
+            
+            args
+            input:  none
+            return: none
         '''
         for i in range(self._boardVertBlocks):
             if i%2 == 0:
