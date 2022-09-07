@@ -53,7 +53,7 @@ The Getting Started menu options displays the steps needed to start a simulation
 ### How Start Simulation
 To start a simulation the user will navigate to the Board menu and select Start.
 The user will be required to input: 
-- the depth of the board (min = 1, max = 10, default = 7)
+- the depth of the board (min = 2, max = 10, default = 7)
 - the number of balls to traverse the board (min = 1, max = 1000000000, default = 100)
 - the interval timer (ms) between starting a ball (min = 0, max = 200, default = 100).  A timer value of 0 will cause the simulator to go as fast as possible.
 ### Viewing Results
