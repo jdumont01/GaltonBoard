@@ -15,7 +15,7 @@ https://www.pythonguis.com/tutorials/plotting-matplotlib/
 
 ## Intended Audiences
 ### Users
-Users should be familiar with the basics of combinatorics or just enjoy playing a guessing game of where the ball will land.  
+Users should be familiar with the basics of combinatorics or just enjoy playing a guessing game.  
 ### Development
 Python 3.9.1 and PyQT5 were used to develop the simulation.
 ## Getting Stared with the Galton Board simulator
