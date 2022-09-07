@@ -30,6 +30,8 @@ The following files will need to be installed
 - statisticsView.py
 - ./images
 - ./images/filled_circle1600.png
+- ./images/horizontal-line.png
+- ./images/vertical-line.png
 ### Installing Extra Modules
 The following modules will need to be installed (via pip or similar):
 - PyQT
