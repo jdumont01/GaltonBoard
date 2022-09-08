@@ -299,7 +299,7 @@ class GaltonBoardUi(QMainWindow):
             args
             input:  none
             return: none
-'''
+        '''
         # Board menu actions
         self.startAction = QAction("&Start", self)
         self.startAction.setShortcut("Ctrl+S")
@@ -378,7 +378,7 @@ class GaltonBoardUi(QMainWindow):
         s += f'\n\nStart Simulation: '
         s += f'\nTo start a simulation the user will navigate to the Board menu and select Start.'
         s += f'\nThe user will be required to input: '
-        s += f'\n\tthe depth of the board (min = 1, max = 10, default = 7)'
+        s += f'\n\tthe depth of the board (min = 2, max = 10, default = 7)'
         s += f'\n\tthe number of balls to traverse the board (min = 1, max = 1000000000, default = 100)'
         s += f'\n\tthe interval timer (ms) between starting a ball (min = 0, max = 200, default = 100).'
         s += f'\n\t   A timer value of 0 will cause the simulator to go as fast as possible.'
